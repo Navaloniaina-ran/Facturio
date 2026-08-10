@@ -1,0 +1,10 @@
+<span
+  class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ring-1 ring-inset whitespace-nowrap"
+  [class]="classes()"
+>
+  <span class="size-1.5 rounded-full" [class]="point()"></span>
+  {{ libelle() }}
+  @if (complement()) {
+    <span class="opacity-70">· {{ complement() }}</span>
+  }
+</span>

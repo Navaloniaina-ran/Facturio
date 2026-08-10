@@ -1,0 +1,131 @@
+<div class="grid min-h-screen lg:grid-cols-2">
+  <!-- Panneau de promesse -->
+  <section class="relative hidden overflow-hidden bg-nuit-900 p-12 lg:flex lg:flex-col lg:justify-between">
+    <div
+      class="pointer-events-none absolute -top-32 -right-24 size-96 rounded-full bg-brand-600/30 blur-3xl"
+      aria-hidden="true"
+    ></div>
+
+    <div class="relative flex items-center gap-3">
+      <span class="grid size-10 place-items-center rounded-xl bg-gradient-to-br from-brand-400 to-brand-700 font-bold text-white">F</span>
+      <span class="text-sm font-semibold text-white">Facturio</span>
+    </div>
+
+    <div class="relative max-w-md">
+      <h1 class="text-4xl leading-tight font-semibold text-white">
+        Suivez vos campagnes, facturez vos marques, soyez payé à temps.
+      </h1>
+      <p class="mt-4 text-sm leading-relaxed text-slate-400">
+        Une campagne, plusieurs livrables, une facture conforme en moins d’une minute — et des
+        relances qui partent sans que vous ayez à y penser.
+      </p>
+
+      <ol class="mt-10 space-y-3">
+        @for (etape of chaine; track etape) {
+          <li class="flex items-center gap-3 text-sm text-slate-300">
+            <span class="grid size-6 shrink-0 place-items-center rounded-full bg-white/10 text-xs font-semibold text-brand-200">
+              {{ $index + 1 }}
+            </span>
+            {{ etape }}
+          </li>
+        }
+      </ol>
+    </div>
+
+    <p class="relative text-xs text-slate-500">
+      Créateurs, influenceurs et freelances · Portail dédié
+    </p>
+  </section>
+
+  <!-- Formulaire -->
+  <section class="flex items-center justify-center px-4 py-12 sm:px-8">
+    <div class="w-full max-w-md">
+      <div class="mb-8 flex items-center gap-3 lg:hidden">
+        <span class="grid size-10 place-items-center rounded-xl bg-gradient-to-br from-brand-400 to-brand-700 font-bold text-white">F</span>
+        <span class="text-sm font-semibold text-slate-900">Facturio</span>
+      </div>
+
+      <p class="text-xs font-semibold tracking-wide text-brand-600 uppercase">Espace créateur</p>
+      <h2 class="mt-2 text-2xl font-semibold text-slate-900">Connexion à votre espace</h2>
+      <p class="mt-2 text-sm text-slate-500">
+        Vous êtes une PME ou une agence ?
+        <a routerLink="/entreprises/connexion" class="font-semibold text-brand-600 hover:underline">
+          Portail entreprise
+        </a>
+      </p>
+
+      @if (portailEntreprise) {
+        <p class="mt-4 rounded-xl bg-sky-50 px-4 py-3 text-sm text-sky-800 ring-1 ring-sky-200">
+          Votre espace est un espace <strong>Créateur</strong> : vous y serez redirigé après
+          authentification.
+        </p>
+      }
+
+      <form class="mt-8 space-y-5" (ngSubmit)="valider()">
+        <div>
+          <label class="etiquette" for="email">Adresse email</label>
+          <input
+            id="email"
+            name="email"
+            type="email"
+            class="champ"
+            autocomplete="email"
+            placeholder="vous@exemple.com"
+            [(ngModel)]="email"
+            required
+          />
+        </div>
+
+        <div>
+          <div class="flex items-baseline justify-between">
+            <label class="etiquette" for="motDePasse">Mot de passe</label>
+            <button type="button" class="mb-1.5 text-xs font-semibold text-brand-600 hover:underline" (click)="motDePasseOublie()">
+              Mot de passe oublié ?
+            </button>
+          </div>
+          <input
+            id="motDePasse"
+            name="motDePasse"
+            type="password"
+            class="champ"
+            autocomplete="current-password"
+            placeholder="••••••••"
+            [(ngModel)]="motDePasse"
+            required
+          />
+        </div>
+
+        @if (erreur()) {
+          <p class="rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700 ring-1 ring-rose-200" role="alert">
+            {{ erreur() }}
+          </p>
+        }
+        @if (information()) {
+          <p class="rounded-xl bg-slate-100 px-4 py-3 text-sm text-slate-600">{{ information() }}</p>
+        }
+
+        <button type="submit" class="bouton-principal w-full">Se connecter</button>
+
+        <div class="flex items-center gap-3 text-xs text-slate-400">
+          <span class="h-px flex-1 bg-slate-200"></span>
+          ou
+          <span class="h-px flex-1 bg-slate-200"></span>
+        </div>
+
+        <button type="button" class="bouton-secondaire w-full" (click)="connexionGoogle()">
+          Continuer avec Google
+        </button>
+        <button type="button" class="bouton-discret w-full justify-center" (click)="entrerEnDemonstration()">
+          Explorer le jeu de démonstration
+        </button>
+      </form>
+
+      <p class="mt-8 text-center text-sm text-slate-500">
+        Pas encore de compte ?
+        <a routerLink="/createurs/inscription" class="font-semibold text-brand-600 hover:underline">
+          Créer mon espace créateur
+        </a>
+      </p>
+    </div>
+  </section>
+</div>

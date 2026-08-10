@@ -1,0 +1,149 @@
+<div class="flex min-h-screen items-center justify-center px-4 py-12">
+  <div class="w-full max-w-xl">
+    <div class="mb-8 flex items-center gap-3">
+      <span class="grid size-10 place-items-center rounded-xl bg-gradient-to-br from-brand-400 to-brand-700 font-bold text-white">F</span>
+      <span class="text-sm font-semibold text-slate-900">Facturio</span>
+    </div>
+
+    <div class="carte p-6 sm:p-8">
+      <!-- Progression : deux étapes maximum -->
+      <div class="flex items-center gap-3">
+        @for (numero of [1, 2]; track numero) {
+          <span
+            class="h-1.5 flex-1 rounded-full transition"
+            [class]="etape() >= numero ? 'bg-brand-600' : 'bg-slate-200'"
+          ></span>
+        }
+        <span class="text-xs font-semibold text-slate-500">Étape {{ etape() }} / 2</span>
+      </div>
+
+      <h1 class="mt-6 text-2xl font-semibold text-slate-900">
+        @if (etape() === 1) {
+          Créez votre espace créateur
+        } @else {
+          Parlez-nous de votre activité
+        }
+      </h1>
+      <p class="mt-2 text-sm text-slate-500">
+        @if (etape() === 1) {
+          Deux minutes suffisent. Le logo et les coordonnées bancaires viendront plus tard.
+        } @else {
+          Ces réponses adaptent votre tableau de bord et vos documents.
+        }
+      </p>
+
+      @if (etape() === 1) {
+        <form class="mt-8 space-y-5" (ngSubmit)="suivant()">
+          <div class="grid gap-5 sm:grid-cols-2">
+            <div>
+              <label class="etiquette" for="nom">Nom et prénom</label>
+              <input id="nom" name="nom" class="champ" placeholder="Toky Raherimana" [(ngModel)]="formulaire.nom" required />
+            </div>
+            <div>
+              <label class="etiquette" for="pseudo">Pseudonyme public</label>
+              <input id="pseudo" name="pseudo" class="champ" placeholder="@toky.creates" [(ngModel)]="formulaire.pseudo" />
+            </div>
+          </div>
+
+          <div>
+            <label class="etiquette" for="email">Adresse email</label>
+            <input id="email" name="email" type="email" class="champ" placeholder="vous@exemple.com" [(ngModel)]="formulaire.email" required />
+          </div>
+
+          <div>
+            <label class="etiquette" for="motDePasse">Mot de passe</label>
+            <input id="motDePasse" name="motDePasse" type="password" class="champ" placeholder="6 caractères minimum" [(ngModel)]="formulaire.motDePasse" required />
+          </div>
+
+          @if (erreur()) {
+            <p class="rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700 ring-1 ring-rose-200" role="alert">{{ erreur() }}</p>
+          }
+
+          <button type="submit" class="bouton-principal w-full">Continuer</button>
+        </form>
+      } @else {
+        <form class="mt-8 space-y-6" (ngSubmit)="valider()">
+          <div>
+            <span class="etiquette">Vous êtes</span>
+            <div class="grid gap-2 sm:grid-cols-3">
+              @for (profil of sousProfils; track profil.valeur) {
+                <label
+                  class="cursor-pointer rounded-xl px-3 py-2.5 text-center text-sm font-medium ring-1 transition"
+                  [class]="formulaire.sousProfil === profil.valeur ? 'bg-brand-50 text-brand-700 ring-brand-300' : 'bg-white text-slate-600 ring-slate-200 hover:bg-slate-50'"
+                >
+                  <input type="radio" name="sousProfil" class="sr-only" [value]="profil.valeur" [(ngModel)]="formulaire.sousProfil" />
+                  {{ profil.libelle }}
+                </label>
+              }
+            </div>
+          </div>
+
+          <div>
+            <span class="etiquette">Plateformes principales</span>
+            <div class="flex flex-wrap gap-2">
+              @for (plateforme of plateformesDisponibles; track plateforme) {
+                <button
+                  type="button"
+                  class="rounded-full px-3.5 py-1.5 text-sm font-medium ring-1 transition"
+                  [class]="plateformeChoisie(plateforme) ? 'bg-brand-600 text-white ring-brand-600' : 'bg-white text-slate-600 ring-slate-200 hover:bg-slate-50'"
+                  [attr.aria-pressed]="plateformeChoisie(plateforme)"
+                  (click)="basculerPlateforme(plateforme)"
+                >
+                  {{ plateforme }}
+                </button>
+              }
+            </div>
+          </div>
+
+          <div class="grid gap-5 sm:grid-cols-2">
+            <div>
+              <label class="etiquette" for="thematique">Thématique / niche</label>
+              <input id="thematique" name="thematique" class="champ" placeholder="Lifestyle, tech, sport…" [(ngModel)]="formulaire.thematique" />
+            </div>
+            <div>
+              <label class="etiquette" for="pays">Pays</label>
+              <input id="pays" name="pays" class="champ" [(ngModel)]="formulaire.pays" />
+            </div>
+          </div>
+
+          <div class="grid gap-5 sm:grid-cols-2">
+            <div>
+              <label class="etiquette" for="devise">Devise de facturation</label>
+              <select id="devise" name="devise" class="champ" [(ngModel)]="formulaire.devise">
+                @for (devise of devises; track devise) {
+                  <option [value]="devise">{{ devise }}</option>
+                }
+              </select>
+            </div>
+            <div>
+              <span class="etiquette">Assujetti à la TVA</span>
+              <label class="flex items-center gap-3 rounded-xl bg-slate-50 px-3.5 py-2.5 text-sm text-slate-700 ring-1 ring-slate-200">
+                <input type="checkbox" name="assujettiTva" class="size-4 rounded accent-brand-600" [(ngModel)]="formulaire.assujettiTva" />
+                Oui, mes factures portent de la TVA
+              </label>
+            </div>
+          </div>
+
+          <label class="flex items-start gap-3 text-sm text-slate-600">
+            <input type="checkbox" name="cgu" class="mt-0.5 size-4 rounded accent-brand-600" [(ngModel)]="cgu" />
+            <span>J’accepte les conditions générales d’utilisation et la politique de confidentialité.</span>
+          </label>
+
+          @if (erreur()) {
+            <p class="rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700 ring-1 ring-rose-200" role="alert">{{ erreur() }}</p>
+          }
+
+          <div class="flex gap-3">
+            <button type="button" class="bouton-secondaire" (click)="retour()">Retour</button>
+            <button type="submit" class="bouton-principal flex-1">Créer mon espace</button>
+          </div>
+        </form>
+      }
+    </div>
+
+    <p class="mt-8 text-center text-sm text-slate-500">
+      Déjà inscrit ?
+      <a routerLink="/createurs/connexion" class="font-semibold text-brand-600 hover:underline">Se connecter</a>
+    </p>
+  </div>
+</div>
