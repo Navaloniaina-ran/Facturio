@@ -1,0 +1,19 @@
+<a
+  [routerLink]="link()"
+  [queryParams]="queryParams()"
+  class="group relative block overflow-hidden rounded-2xl bg-white p-5 ring-1 ring-slate-200/80 transition hover:-translate-y-0.5 hover:shadow-lg hover:shadow-slate-200/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
+>
+  <span class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r" [class]="accent()"></span>
+
+  <p class="text-xs font-semibold tracking-wide text-slate-500 uppercase">{{ label() }}</p>
+  <p class="mt-2 text-2xl font-semibold text-slate-900 tabular-nums">{{ value() }}</p>
+
+  @if (detail()) {
+    <p class="mt-1 text-xs text-slate-500">{{ detail() }}</p>
+  }
+
+  <span
+    class="absolute right-4 bottom-4 text-slate-300 opacity-0 transition group-hover:opacity-100"
+    aria-hidden="true"
+  >→</span>
+</a>

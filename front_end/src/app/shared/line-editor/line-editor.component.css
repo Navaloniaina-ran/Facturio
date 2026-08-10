@@ -1,0 +1,38 @@
+/* Grille de saisie d'une ligne : deux colonnes sur mobile, sept sur écran large. */
+.line-grid {
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@media (min-width: 640px) {
+  .line-grid {
+    align-items: center;
+    grid-template-columns:
+      minmax(0, 3fr) minmax(0, 1.5fr) 4.5rem minmax(0, 1.4fr)
+      minmax(0, 1.6fr) 4.5rem 2.25rem;
+  }
+}
+
+/* Remise : le sélecteur de type est collé au champ de valeur. */
+.discount-cell {
+  display: flex;
+  min-width: 0;
+}
+
+.discount-cell input {
+  border-start-end-radius: 0;
+  border-end-end-radius: 0;
+}
+
+.discount-cell select {
+  width: 3.75rem;
+  flex: none;
+  border-start-start-radius: 0;
+  border-end-start-radius: 0;
+}
+
+/* Bandeau des totaux : chiffres alignés d'une ligne à l'autre. */
+.totals {
+  font-variant-numeric: tabular-nums;
+}

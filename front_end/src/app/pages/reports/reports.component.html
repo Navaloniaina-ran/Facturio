@@ -1,0 +1,232 @@
+<div class="space-y-5">
+  <div class="flex flex-wrap items-end justify-between gap-4">
+    <div>
+      <h1 class="text-xl font-semibold text-slate-900">{{ i18n.t('nav.reports') }}</h1>
+      <p class="mt-1 text-sm text-slate-500">{{ i18n.t('reports.subtitle') }}</p>
+    </div>
+    <button type="button" class="btn-secondary" (click)="exportCsv()">{{ i18n.t('common.export') }}</button>
+  </div>
+
+  @if (message()) {
+    <p class="rounded-xl bg-brand-50 px-4 py-3 text-sm text-brand-800 ring-1 ring-brand-200">{{ message() }}</p>
+  }
+
+  <!-- Indicateurs -->
+  <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+    <div class="card p-4">
+      <p class="text-xs text-slate-500">{{ i18n.t('kpi.revenue') }}</p>
+      <p class="num mt-1 text-lg font-semibold text-slate-900">{{ service.revenue() | amount }}</p>
+    </div>
+    <div class="card p-4">
+      <p class="text-xs text-slate-500">{{ i18n.t('kpi.collected') }}</p>
+      <p class="num mt-1 text-lg font-semibold text-emerald-600">{{ service.collected() | amount }}</p>
+    </div>
+    <div class="card p-4">
+      <p class="text-xs text-slate-500">{{ i18n.t('reports.kpi.unpaidRate') }}</p>
+      <p class="num mt-1 text-lg font-semibold text-rose-600">{{ service.unpaidRate() }} %</p>
+    </div>
+    <div class="card p-4">
+      <p class="text-xs text-slate-500">{{ i18n.t('reports.kpi.avgDelay') }}</p>
+      <p class="num mt-1 text-lg font-semibold text-slate-900">
+        {{ service.averageDelay() }} {{ i18n.t('common.days') }}
+      </p>
+    </div>
+    <div class="card p-4">
+      <p class="text-xs text-slate-500">{{ i18n.t('reports.kpi.acceptance') }}</p>
+      <p class="num mt-1 text-lg font-semibold text-brand-600">{{ service.acceptanceRate() }} %</p>
+    </div>
+  </div>
+
+  <!-- Revenus par année -->
+  <section class="card p-5">
+    <div class="flex flex-wrap items-baseline justify-between gap-3">
+      <h2 class="text-sm font-semibold text-slate-900">{{ i18n.t('reports.byYear') }}</h2>
+      <div class="flex flex-wrap gap-2">
+        @for (year of service.years(); track year) {
+          <button
+            type="button"
+            class="chip"
+            [class.chip-active]="service.selectedYear() === year"
+            (click)="selectYear(year)"
+          >
+            {{ year }}
+          </button>
+        }
+      </div>
+    </div>
+
+    <ul class="mt-4 space-y-3">
+      @for (row of service.byYear(); track row.year) {
+        <li>
+          <div class="flex items-baseline justify-between text-sm">
+            <span class="num text-slate-700">{{ row.year }}</span>
+            <span class="num text-slate-500">
+              {{ i18n.t('reports.invoiced') }} {{ row.invoiced | amount }} ·
+              {{ i18n.t('reports.collected') }} {{ row.collected | amount }}
+            </span>
+          </div>
+          <div class="meter mt-1.5">
+            <span [style.width.%]="row.share"></span>
+          </div>
+        </li>
+      }
+    </ul>
+  </section>
+
+  <!-- Revenus par mois de l'année choisie -->
+  <section class="card p-5">
+    <div class="flex flex-wrap items-baseline justify-between gap-3">
+      <h2 class="text-sm font-semibold text-slate-900">
+        {{ i18n.t('reports.byMonth', { year: service.selectedYear() }) }}
+      </h2>
+      <p class="text-xs font-semibold" [class]="service.yearTrend() >= 0 ? 'text-emerald-600' : 'text-rose-600'">
+        {{
+          i18n.t('reports.comparison', {
+            year: service.selectedYear(),
+            previous: service.selectedYear() - 1,
+            trend: (service.yearTrend() > 0 ? '+' : '') + service.yearTrend(),
+          })
+        }}
+      </p>
+    </div>
+
+    <div class="mt-6 flex h-40 items-end gap-1.5">
+      @for (month of service.monthsOfYear(); track month.month) {
+        <div class="flex flex-1 flex-col items-center gap-1.5">
+          <div
+            class="w-full rounded-t bg-gradient-to-t from-brand-600 to-brand-400"
+            [style.height.%]="month.share"
+            [attr.aria-label]="month.label + ' : ' + month.invoiced"
+          ></div>
+          <span class="text-[10px] text-slate-400 capitalize">{{ month.label }}</span>
+        </div>
+      }
+    </div>
+
+    <dl class="mt-5 grid gap-3 border-t border-slate-100 pt-4 sm:grid-cols-3">
+      <div>
+        <dt class="stat-label">{{ i18n.t('reports.invoiced') }}</dt>
+        <dd class="stat-value">{{ service.yearInvoiced() | amount }}</dd>
+      </div>
+      <div>
+        <dt class="stat-label">{{ i18n.t('reports.bestMonth') }}</dt>
+        <dd class="stat-value capitalize">
+          {{ service.bestMonth().label }} · {{ service.bestMonth().invoiced | amount }}
+        </dd>
+      </div>
+      <div>
+        <dt class="stat-label">{{ i18n.t('reports.averageMonth') }}</dt>
+        <dd class="stat-value">{{ service.monthlyAverage() | amount }}</dd>
+      </div>
+    </dl>
+  </section>
+
+  <!-- Fiabilité des marques -->
+  <section class="card p-5">
+    <h2 class="text-sm font-semibold text-slate-900">{{ i18n.t('reports.reliability') }}</h2>
+    <p class="mt-1 text-xs text-slate-500">{{ i18n.t('reports.reliabilityHint') }}</p>
+
+    <ul class="mt-4 space-y-4">
+      @for (brand of service.reliableBrands(); track brand.id) {
+        <li>
+          <div class="flex items-baseline justify-between gap-3">
+            <span class="truncate text-sm font-medium text-slate-800">{{ brand.name }}</span>
+            <span class="num text-sm font-semibold text-slate-900">{{ brand.reliability }} / 100</span>
+          </div>
+          <p class="text-xs text-slate-500">
+            {{ i18n.t(brand.reliabilityKey) }} ·
+            {{ i18n.t('reliability.onTime', { value: brand.onTimeRate }) }} ·
+            {{ i18n.t('reliability.delay', { value: brand.averageDelay }) }}
+          </p>
+          <div class="meter mt-1.5">
+            <span
+              [class]="brand.reliability >= 65 ? 'bg-emerald-500' : brand.reliability >= 40 ? 'bg-amber-500' : 'bg-rose-500'"
+              [style.width.%]="brand.reliability"
+            ></span>
+          </div>
+        </li>
+      } @empty {
+        <li class="text-sm text-slate-500">{{ i18n.t('dashboard.noReliable') }}</li>
+      }
+    </ul>
+  </section>
+
+  <div class="grid gap-6 lg:grid-cols-2">
+    <!-- Top marques -->
+    <section class="card p-5">
+      <h2 class="text-sm font-semibold text-slate-900">{{ i18n.t('reports.topBrands') }}</h2>
+      <ul class="mt-4 space-y-3">
+        @for (brand of service.topBrands(); track brand.label) {
+          <li>
+            <div class="flex items-baseline justify-between text-sm">
+              <span class="text-slate-700">{{ brand.label }}</span>
+              <span class="num font-semibold text-slate-900">{{ brand.amount | amount }}</span>
+            </div>
+            <div class="mt-1.5 h-1.5 overflow-hidden rounded-full bg-slate-100">
+              <div class="h-full rounded-full bg-brand-500" [style.width.%]="brand.share"></div>
+            </div>
+          </li>
+        } @empty {
+          <li class="text-sm text-slate-500">{{ i18n.t('reports.noInvoice') }}</li>
+        }
+      </ul>
+    </section>
+
+    <!-- Revenus par type de livrable -->
+    <section class="card p-5">
+      <h2 class="text-sm font-semibold text-slate-900">{{ i18n.t('reports.byDeliverable') }}</h2>
+      <ul class="mt-4 space-y-3">
+        @for (row of service.byDeliverable(); track row.label) {
+          <li>
+            <div class="flex items-baseline justify-between text-sm">
+              <span class="text-slate-700">{{ row.label }}</span>
+              <span class="num font-semibold text-slate-900">{{ row.amount | amount }}</span>
+            </div>
+            <div class="mt-1.5 h-1.5 overflow-hidden rounded-full bg-slate-100">
+              <div class="h-full rounded-full bg-emerald-500" [style.width.%]="row.share"></div>
+            </div>
+          </li>
+        } @empty {
+          <li class="text-sm text-slate-500">{{ i18n.t('reports.noDeliverable') }}</li>
+        }
+      </ul>
+    </section>
+  </div>
+
+  <!-- Balance âgée -->
+  <section class="card overflow-hidden">
+    <h2 class="px-5 py-4 text-sm font-semibold text-slate-900">{{ i18n.t('reports.aging') }}</h2>
+
+    <div class="overflow-x-auto">
+      <table class="w-full min-w-[32rem]">
+        <thead class="bg-slate-50/80">
+          <tr>
+            <th class="th-cell">{{ i18n.t('reports.aging.bucket') }}</th>
+            <th class="th-cell text-right">{{ i18n.t('reports.aging.invoices') }}</th>
+            <th class="th-cell text-right">{{ i18n.t('reports.aging.amount') }}</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          @for (bucket of service.aging(); track bucket.labelKey) {
+            <tr>
+              <td class="td-cell">{{ i18n.t(bucket.labelKey) }}</td>
+              <td class="td-cell num text-right">{{ bucket.count }}</td>
+              <td
+                class="td-cell num text-right font-semibold"
+                [class]="bucket.amount > 0 ? 'text-slate-900' : 'text-slate-400'"
+              >
+                {{ bucket.amount | amount }}
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  @if (!service.advancedReports()) {
+    <p class="rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-800 ring-1 ring-amber-200">
+      {{ i18n.t('reports.planNotice') }}
+    </p>
+  }
+</div>

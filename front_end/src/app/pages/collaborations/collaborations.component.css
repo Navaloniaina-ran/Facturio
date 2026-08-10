@@ -1,0 +1,38 @@
+/*
+ * Pipeline : colonnes côte à côte, défilement horizontal sur petit écran avec
+ * accroche pour ne jamais couper une colonne en deux.
+ */
+.board {
+  display: grid;
+  gap: 1rem;
+  grid-auto-columns: minmax(15rem, 1fr);
+  grid-auto-flow: column;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  padding-bottom: 0.5rem;
+  scroll-snap-type: x proximity;
+}
+
+.board > * {
+  scroll-snap-align: start;
+}
+
+/* Colonne : en-tête figé au-dessus de ses cartes. */
+.column {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+  min-width: 0;
+}
+
+.column-head {
+  align-items: baseline;
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+/* Une action en retard se signale par un filet ambre. */
+.due {
+  box-shadow: inset 3px 0 0 var(--color-amber-400);
+}

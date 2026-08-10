@@ -1,0 +1,156 @@
+<div class="flex min-h-dvh items-center justify-center px-4 py-12">
+  <div class="w-full max-w-xl">
+    <div class="mb-8 flex items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <span class="grid size-10 place-items-center rounded-xl bg-gradient-to-br from-brand-400 to-brand-700 font-bold text-white">F</span>
+        <span class="text-sm font-semibold text-slate-900">{{ i18n.t('app.name') }}</span>
+      </div>
+      <app-language-switch />
+    </div>
+
+    <div class="card p-6 sm:p-8">
+      <!-- Progression : deux étapes maximum -->
+      <div class="flex items-center gap-3">
+        @for (index of [1, 2]; track index) {
+          <span
+            class="h-1.5 flex-1 rounded-full transition"
+            [class]="step() >= index ? 'bg-brand-600' : 'bg-slate-200'"
+          ></span>
+        }
+        <span class="text-xs font-semibold text-slate-500">
+          {{ i18n.t('signup.step', { current: step() }) }}
+        </span>
+      </div>
+
+      <h1 class="mt-6 text-2xl font-semibold text-slate-900">
+        {{ step() === 1 ? i18n.t('signup.title1') : i18n.t('signup.title2') }}
+      </h1>
+      <p class="mt-2 text-sm text-slate-500">
+        {{ step() === 1 ? i18n.t('signup.subtitle1') : i18n.t('signup.subtitle2') }}
+      </p>
+
+      @if (step() === 1) {
+        <form class="mt-8 space-y-5" (ngSubmit)="next()">
+          <div class="grid gap-5 sm:grid-cols-2">
+            <div>
+              <label class="field-label" for="name">{{ i18n.t('signup.name') }}</label>
+              <input id="name" name="name" class="field" placeholder="Toky Raherimana" [(ngModel)]="form.name" required />
+            </div>
+            <div>
+              <label class="field-label" for="handle">{{ i18n.t('signup.handle') }}</label>
+              <input id="handle" name="handle" class="field" placeholder="@toky.creates" [(ngModel)]="form.handle" />
+            </div>
+          </div>
+
+          <div>
+            <label class="field-label" for="email">{{ i18n.t('login.email') }}</label>
+            <input id="email" name="email" type="email" class="field" placeholder="vous@exemple.com" [(ngModel)]="form.email" required />
+          </div>
+
+          <div>
+            <label class="field-label" for="password">{{ i18n.t('login.password') }}</label>
+            <input
+              id="password"
+              name="password"
+              type="password"
+              class="field"
+              [placeholder]="i18n.t('signup.passwordHint')"
+              [(ngModel)]="form.password"
+              required
+            />
+          </div>
+
+          @if (error()) {
+            <p class="rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700 ring-1 ring-rose-200" role="alert">{{ error() }}</p>
+          }
+
+          <button type="submit" class="btn-primary w-full">{{ i18n.t('signup.continue') }}</button>
+        </form>
+      } @else {
+        <form class="mt-8 space-y-6" (ngSubmit)="submit()">
+          <div>
+            <span class="field-label">{{ i18n.t('signup.youAre') }}</span>
+            <div class="grid gap-2 sm:grid-cols-3">
+              @for (profile of profiles; track profile) {
+                <label
+                  class="cursor-pointer rounded-xl px-3 py-2.5 text-center text-sm font-medium ring-1 transition"
+                  [class]="form.subProfile === profile ? 'bg-brand-50 text-brand-700 ring-brand-300' : 'bg-white text-slate-600 ring-slate-200 hover:bg-slate-50'"
+                >
+                  <input type="radio" name="subProfile" class="sr-only" [value]="profile" [(ngModel)]="form.subProfile" />
+                  {{ i18n.t('profile.' + profile) }}
+                </label>
+              }
+            </div>
+          </div>
+
+          <div>
+            <span class="field-label">{{ i18n.t('signup.platforms') }}</span>
+            <div class="flex flex-wrap gap-2">
+              @for (platform of platforms; track platform) {
+                <button
+                  type="button"
+                  class="rounded-full px-3.5 py-1.5 text-sm font-medium ring-1 transition"
+                  [class]="platformSelected(platform) ? 'bg-brand-600 text-white ring-brand-600' : 'bg-white text-slate-600 ring-slate-200 hover:bg-slate-50'"
+                  [attr.aria-pressed]="platformSelected(platform)"
+                  (click)="togglePlatform(platform)"
+                >
+                  {{ platform }}
+                </button>
+              }
+            </div>
+          </div>
+
+          <div class="grid gap-5 sm:grid-cols-2">
+            <div>
+              <label class="field-label" for="niche">{{ i18n.t('signup.niche') }}</label>
+              <input id="niche" name="niche" class="field" [(ngModel)]="form.niche" />
+            </div>
+            <div>
+              <label class="field-label" for="country">{{ i18n.t('signup.country') }}</label>
+              <input id="country" name="country" class="field" [(ngModel)]="form.country" />
+            </div>
+          </div>
+
+          <div class="grid gap-5 sm:grid-cols-2">
+            <div>
+              <label class="field-label" for="currency">{{ i18n.t('signup.currency') }}</label>
+              <select id="currency" name="currency" class="field" [(ngModel)]="form.currency">
+                @for (currency of currencies; track currency) {
+                  <option [value]="currency">{{ currency }}</option>
+                }
+              </select>
+            </div>
+            <div>
+              <span class="field-label">{{ i18n.t('signup.vat') }}</span>
+              <label class="flex items-center gap-3 rounded-xl bg-slate-50 px-3.5 py-2.5 text-sm text-slate-700 ring-1 ring-slate-200">
+                <input type="checkbox" name="vatRegistered" class="size-4 rounded accent-brand-600" [(ngModel)]="form.vatRegistered" />
+                {{ i18n.t('signup.vatYes') }}
+              </label>
+            </div>
+          </div>
+
+          <label class="flex items-start gap-3 text-sm text-slate-600">
+            <input type="checkbox" name="terms" class="mt-0.5 size-4 rounded accent-brand-600" [(ngModel)]="termsAccepted" />
+            <span>{{ i18n.t('signup.terms') }}</span>
+          </label>
+
+          @if (error()) {
+            <p class="rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700 ring-1 ring-rose-200" role="alert">{{ error() }}</p>
+          }
+
+          <div class="flex gap-3">
+            <button type="button" class="btn-secondary" (click)="back()">{{ i18n.t('signup.back') }}</button>
+            <button type="submit" class="btn-primary flex-1">{{ i18n.t('signup.submit') }}</button>
+          </div>
+        </form>
+      }
+    </div>
+
+    <p class="mt-8 text-center text-sm text-slate-500">
+      {{ i18n.t('signup.alreadyMember') }}
+      <a routerLink="/createurs/connexion" class="font-semibold text-brand-600 hover:underline">
+        {{ i18n.t('signup.loginLink') }}
+      </a>
+    </p>
+  </div>
+</div>

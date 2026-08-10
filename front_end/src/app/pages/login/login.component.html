@@ -1,0 +1,133 @@
+<div class="grid min-h-dvh lg:grid-cols-2">
+  <!-- Panneau de promesse -->
+  <section class="relative hidden overflow-hidden bg-night-900 p-12 lg:flex lg:flex-col lg:justify-between">
+    <div
+      class="pointer-events-none absolute -top-32 -right-24 size-96 rounded-full bg-brand-600/30 blur-3xl"
+      aria-hidden="true"
+    ></div>
+
+    <div class="relative flex items-center gap-3">
+      <span class="grid size-10 place-items-center rounded-xl bg-gradient-to-br from-brand-400 to-brand-700 font-bold text-white">F</span>
+      <span class="text-sm font-semibold text-white">{{ i18n.t('app.name') }}</span>
+    </div>
+
+    <div class="relative max-w-md">
+      <h1 class="text-4xl leading-tight font-semibold text-white">{{ i18n.t('login.promise') }}</h1>
+      <p class="mt-4 text-sm leading-relaxed text-slate-400">{{ i18n.t('login.promiseText') }}</p>
+
+      <ol class="mt-10 space-y-3">
+        @for (key of chain; track key) {
+          <li class="flex items-center gap-3 text-sm text-slate-300">
+            <span class="grid size-6 shrink-0 place-items-center rounded-full bg-white/10 text-xs font-semibold text-brand-200">
+              {{ $index + 1 }}
+            </span>
+            {{ i18n.t(key) }}
+          </li>
+        }
+      </ol>
+    </div>
+
+    <p class="relative text-xs text-slate-500">{{ i18n.t('login.audience') }}</p>
+  </section>
+
+  <!-- Formulaire -->
+  <section class="flex items-center justify-center px-4 py-12 sm:px-8">
+    <div class="w-full max-w-md">
+      <div class="mb-8 flex items-center justify-between gap-3">
+        <div class="flex items-center gap-3 lg:invisible">
+          <span class="grid size-10 place-items-center rounded-xl bg-gradient-to-br from-brand-400 to-brand-700 font-bold text-white">F</span>
+          <span class="text-sm font-semibold text-slate-900">{{ i18n.t('app.name') }}</span>
+        </div>
+        <app-language-switch />
+      </div>
+
+      <p class="text-xs font-semibold tracking-wide text-brand-600 uppercase">
+        {{ i18n.t('login.eyebrow') }}
+      </p>
+      <h2 class="mt-2 text-2xl font-semibold text-slate-900">{{ i18n.t('login.title') }}</h2>
+      <p class="mt-2 text-sm text-slate-500">
+        {{ i18n.t('login.businessQuestion') }}
+        <a routerLink="/entreprises/connexion" class="font-semibold text-brand-600 hover:underline">
+          {{ i18n.t('login.businessLink') }}
+        </a>
+      </p>
+
+      @if (businessPortal) {
+        <p
+          class="mt-4 rounded-xl bg-sky-50 px-4 py-3 text-sm text-sky-800 ring-1 ring-sky-200"
+          [innerHTML]="i18n.t('login.businessNotice')"
+        ></p>
+      }
+
+      <form class="mt-8 space-y-5" (ngSubmit)="submit()">
+        <div>
+          <label class="field-label" for="email">{{ i18n.t('login.email') }}</label>
+          <input
+            id="email"
+            name="email"
+            type="email"
+            class="field"
+            autocomplete="email"
+            placeholder="vous@exemple.com"
+            [(ngModel)]="email"
+            required
+          />
+        </div>
+
+        <div>
+          <div class="flex items-baseline justify-between">
+            <label class="field-label" for="password">{{ i18n.t('login.password') }}</label>
+            <button
+              type="button"
+              class="mb-1.5 text-xs font-semibold text-brand-600 hover:underline"
+              (click)="forgotPassword()"
+            >
+              {{ i18n.t('login.forgot') }}
+            </button>
+          </div>
+          <input
+            id="password"
+            name="password"
+            type="password"
+            class="field"
+            autocomplete="current-password"
+            placeholder="••••••••"
+            [(ngModel)]="password"
+            required
+          />
+        </div>
+
+        @if (error()) {
+          <p class="rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700 ring-1 ring-rose-200" role="alert">
+            {{ error() }}
+          </p>
+        }
+        @if (info()) {
+          <p class="rounded-xl bg-slate-100 px-4 py-3 text-sm text-slate-600">{{ info() }}</p>
+        }
+
+        <button type="submit" class="btn-primary w-full">{{ i18n.t('login.submit') }}</button>
+
+        <div class="flex items-center gap-3 text-xs text-slate-400">
+          <span class="h-px flex-1 bg-slate-200"></span>
+          {{ i18n.t('login.or') }}
+          <span class="h-px flex-1 bg-slate-200"></span>
+        </div>
+
+        <button type="button" class="btn-secondary w-full" (click)="googleSignIn()">
+          {{ i18n.t('login.google') }}
+        </button>
+        <button type="button" class="btn-ghost w-full justify-center" (click)="enterDemo()">
+          {{ i18n.t('login.demo') }}
+        </button>
+      </form>
+
+      <p class="mt-8 text-center text-sm text-slate-500">
+        {{ i18n.t('login.noAccount') }}
+        <a routerLink="/createurs/inscription" class="font-semibold text-brand-600 hover:underline">
+          {{ i18n.t('login.signupLink') }}
+        </a>
+      </p>
+    </div>
+  </section>
+</div>

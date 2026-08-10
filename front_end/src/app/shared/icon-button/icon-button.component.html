@@ -1,0 +1,15 @@
+@if (link(); as target) {
+  <a [routerLink]="target" [class]="classes()" [title]="label()" [attr.aria-label]="label()">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path [attr.d]="path()" /></svg>
+  </a>
+} @else {
+  <button
+    type="button"
+    [class]="classes()"
+    [title]="label()"
+    [attr.aria-label]="label()"
+    (click)="action.emit()"
+  >
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path [attr.d]="path()" /></svg>
+  </button>
+}

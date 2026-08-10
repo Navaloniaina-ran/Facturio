@@ -1,0 +1,281 @@
+<div class="space-y-5">
+  <div class="page-head">
+    <div>
+      <h1 class="page-title">{{ i18n.t('quotes.title') }}</h1>
+      <p class="page-subtitle">
+        {{ i18n.t('quotes.subtitle', { count: service.list().length, rate: service.acceptanceRate() }) }}
+      </p>
+    </div>
+    <button type="button" class="btn-primary" (click)="openCreate()">{{ i18n.t('quotes.new') }}</button>
+  </div>
+
+  @if (message()) {
+    <p class="flash">{{ message() }}</p>
+  }
+
+  <div class="flex flex-wrap items-center gap-2">
+    @for (item of tabs; track item) {
+      <button
+        type="button"
+        class="chip"
+        [class.chip-active]="tab() === item"
+        (click)="tab.set(item)"
+      >
+        {{ tabLabel(item) }}
+        <span class="num opacity-60">{{ countFor(item) }}</span>
+      </button>
+    }
+  </div>
+
+  <div class="card overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="w-full min-w-[56rem]">
+        <thead class="bg-slate-50/80">
+          <tr>
+            <th class="th-cell">{{ i18n.t('quotes.col.number') }}</th>
+            <th class="th-cell">{{ i18n.t('quotes.col.brand') }}</th>
+            <th class="th-cell">{{ i18n.t('quotes.col.date') }}</th>
+            <th class="th-cell">{{ i18n.t('quotes.col.expiry') }}</th>
+            <th class="th-cell text-right">{{ i18n.t('quotes.col.amount') }}</th>
+            <th class="th-cell">{{ i18n.t('quotes.col.status') }}</th>
+            <th class="th-cell text-right">{{ i18n.t('brands.col.actions') }}</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          @for (quote of filtered(); track quote.id) {
+            <tr class="hover:bg-slate-50/70">
+              <td class="td-cell">
+                <button
+                  type="button"
+                  class="font-semibold text-slate-900 hover:text-brand-600"
+                  (click)="open(quote, 'detail')"
+                >
+                  {{ quote.number || i18n.t('common.draft') }}
+                </button>
+                @if (quote.campaignName) {
+                  <p class="text-xs text-slate-500">{{ quote.campaignName }}</p>
+                }
+              </td>
+              <td class="td-cell">{{ quote.brandName }}</td>
+              <td class="td-cell text-slate-500">{{ quote.date | localDate }}</td>
+              <td class="td-cell text-slate-500">{{ quote.expiryDate | localDate }}</td>
+              <td class="td-cell num text-right font-semibold text-slate-900">{{ quote.totalInclVat | amount }}</td>
+              <td class="td-cell"><app-status-badge [status]="quote.status" /></td>
+              <td class="td-cell">
+                <div class="flex items-center justify-end gap-0.5">
+                  <app-icon-button
+                    icon="view"
+                    [label]="i18n.t('preview.open')"
+                    (action)="open(quote, 'detail')"
+                  />
+                  @if (quote.editable) {
+                    <app-icon-button
+                      icon="edit"
+                      tone="brand"
+                      [label]="i18n.t('common.edit')"
+                      (action)="openEdit(quote)"
+                    />
+                  }
+                  <app-icon-button
+                    icon="mail"
+                    tone="brand"
+                    [label]="i18n.t('email.send')"
+                    (action)="openEmail(quote)"
+                  />
+                  @if (quote.status === 'DRAFT') {
+                    <app-icon-button
+                      icon="send"
+                      tone="brand"
+                      [label]="i18n.t('common.send')"
+                      (action)="send(quote)"
+                    />
+                    <app-icon-button
+                      icon="delete"
+                      tone="danger"
+                      [label]="i18n.t('common.delete')"
+                      (action)="open(quote, 'delete')"
+                    />
+                  }
+                  @if (quote.status === 'SENT') {
+                    <app-icon-button
+                      icon="accept"
+                      tone="success"
+                      [label]="i18n.t('quotes.markAccepted')"
+                      (action)="accept(quote)"
+                    />
+                    <app-icon-button
+                      icon="refuse"
+                      tone="danger"
+                      [label]="i18n.t('quotes.markRefused')"
+                      (action)="refuse(quote)"
+                    />
+                  }
+                  @if (quote.status === 'ACCEPTED') {
+                    <app-icon-button
+                      icon="convert"
+                      tone="brand"
+                      [label]="i18n.t('quotes.convert')"
+                      (action)="convert(quote)"
+                    />
+                  }
+                  <app-icon-button
+                    icon="duplicate"
+                    [label]="i18n.t('common.duplicate')"
+                    (action)="duplicate(quote)"
+                  />
+                </div>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td class="td-cell text-slate-500" colspan="7">{{ i18n.t('quotes.empty') }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Création -->
+@if (modal() === 'form') {
+  <app-modal
+    [title]="
+      editedId
+        ? i18n.t('quotes.editTitle', { number: current()?.number || i18n.t('common.draft') })
+        : i18n.t('quotes.new')
+    "
+    [subtitle]="i18n.t('quotes.form.subtitle')"
+    [wide]="true"
+    (closed)="close()"
+  >
+    <form class="space-y-6" (ngSubmit)="save(false)">
+      <div class="grid gap-4 sm:grid-cols-2">
+        <div>
+          <label class="field-label" for="brand">{{ i18n.t('campaigns.form.brand') }}</label>
+          <select id="brand" name="brand" class="field" [(ngModel)]="draft.brandId">
+            @for (brand of brands(); track brand.id) {
+              <option [value]="brand.id">{{ brand.name }}</option>
+            }
+          </select>
+        </div>
+        <div>
+          <label class="field-label" for="campaign">{{ i18n.t('quotes.form.campaign') }}</label>
+          <select id="campaign" name="campaign" class="field" [(ngModel)]="draft.campaignId">
+            <option [ngValue]="null">{{ i18n.t('common.none') }}</option>
+            @for (campaign of campaigns.list(); track campaign.id) {
+              <option [ngValue]="campaign.id">{{ campaign.name }}</option>
+            }
+          </select>
+        </div>
+      </div>
+
+      <div class="grid gap-4 sm:grid-cols-2">
+        <div>
+          <label class="field-label" for="date">{{ i18n.t('quotes.form.date') }}</label>
+          <input id="date" name="date" type="date" class="field" [(ngModel)]="draft.date" />
+        </div>
+        <div>
+          <label class="field-label" for="expiry">{{ i18n.t('quotes.form.expiry') }}</label>
+          <input id="expiry" name="expiry" type="date" class="field" [(ngModel)]="draft.expiryDate" />
+        </div>
+      </div>
+
+      <app-line-editor
+        [lines]="draft.lines"
+        [globalDiscount]="draft.globalDiscount"
+        [taxation]="draft"
+        (add)="addLine()"
+        (remove)="removeLine($event)"
+        (addTax)="addTax()"
+        (removeTax)="removeTax($event)"
+      />
+
+      <div>
+        <label class="field-label" for="terms">{{ i18n.t('invoices.form.terms') }}</label>
+        <textarea id="terms" name="terms" rows="2" class="field" [(ngModel)]="draft.terms"></textarea>
+      </div>
+
+      @if (error()) {
+        <p class="alert-error" role="alert">{{ error() }}</p>
+      }
+
+      <div class="flex flex-wrap justify-end gap-3">
+        <button type="button" class="btn-secondary" (click)="save(true)">
+          {{ i18n.t('quotes.form.saveDraft') }}
+        </button>
+        <button type="submit" class="btn-primary">{{ i18n.t('quotes.form.submit') }}</button>
+      </div>
+    </form>
+  </app-modal>
+}
+
+<!-- Détail -->
+@if (modal() === 'detail' && current(); as quote) {
+  <app-modal
+    [title]="quote.number || i18n.t('common.draft')"
+    [subtitle]="quote.brandName + ' · ' + quote.expiryDate"
+    [wide]="true"
+    (closed)="close()"
+  >
+    <div class="space-y-6">
+      <app-status-badge [status]="quote.status" />
+
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="border-b border-slate-100 text-xs text-slate-500 uppercase">
+            <th class="py-2 text-left">{{ i18n.t('invoices.detail.deliverable') }}</th>
+            <th class="py-2 text-right">{{ i18n.t('invoices.detail.qty') }}</th>
+            <th class="py-2 text-right">{{ i18n.t('invoices.detail.unit') }}</th>
+            <th class="py-2 text-right">{{ i18n.t('invoices.detail.discount') }}</th>
+            <th class="py-2 text-right">{{ i18n.t('invoices.detail.vat') }}</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          @for (line of quote.lines; track line.id) {
+            <tr>
+              <td class="py-2.5 text-slate-700">{{ line.description }}</td>
+              <td class="num py-2.5 text-right">{{ line.quantity }}</td>
+              <td class="num py-2.5 text-right">{{ line.unitPrice | amount }}</td>
+              <td class="num py-2.5 text-right">{{ line.discountType === 'PERCENT' ? line.discountValue + ' %' : (line.discountValue | amount) }}</td>
+              <td class="num py-2.5 text-right">{{ line.vatRate }} %</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+
+      <dl class="space-y-1 rounded-xl bg-slate-50 p-4 text-sm">
+        @if (quote.globalDiscountAmount > 0) {
+          <div class="flex justify-between">
+            <dt>{{ i18n.t('totals.subtotal') }}</dt>
+            <dd class="num">{{ quote.subtotal | amount }}</dd>
+          </div>
+          <div class="flex justify-between text-brand-700">
+            <dt>{{ i18n.t('totals.globalDiscount') }}</dt>
+            <dd class="num">− {{ quote.globalDiscountAmount | amount }}</dd>
+          </div>
+        }
+        <div class="flex justify-between">
+          <dt>{{ i18n.t('invoices.detail.totalHt') }}</dt>
+          <dd class="num">{{ quote.totalExclVat | amount }}</dd>
+        </div>
+        <div class="flex justify-between">
+          <dt>{{ i18n.t('invoices.detail.totalVat') }}</dt>
+          <dd class="num">{{ quote.totalVat | amount }}</dd>
+        </div>
+        <div class="flex justify-between font-semibold text-slate-900">
+          <dt>{{ i18n.t('invoices.detail.totalTtc') }}</dt>
+          <dd class="num">{{ quote.totalInclVat | amount }}</dd>
+        </div>
+      </dl>
+
+      <div class="rounded-xl bg-slate-50 p-4 text-sm">
+        <p class="font-semibold text-slate-700">{{ i18n.t('quotes.publicLink') }}</p>
+        <p class="mt-1 font-mono text-xs break-all text-brand-700">{{ publicLink(quote) }}</p>
+        <p class="mt-2 text-xs text-slate-500">{{ i18n.t('quotes.publicHint') }}</p>
+      </div>
+
+      <p class="text-xs text-slate-500">{{ quote.terms }}</p>
+    </div>
+  </app-modal>
+}

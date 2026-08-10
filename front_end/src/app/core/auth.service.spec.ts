@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { AuthService } from './auth.service';
-import { EspaceStoreService } from './espace-store.service';
+import { WorkspaceStore } from './workspace-store.service';
 
 describe('AuthService', () => {
   let auth: AuthService;
@@ -9,51 +9,48 @@ describe('AuthService', () => {
     localStorage.clear();
     TestBed.configureTestingModule({});
     auth = TestBed.inject(AuthService);
-    auth.deconnexion();
+    auth.signOut();
   });
 
-  it('refuse un email invalide', () => {
-    expect(auth.connexion('toky', 'motdepasse')).toEqual({
-      ok: false,
-      message: 'Adresse email invalide.',
-    });
-    expect(auth.estConnecte()).toBe(false);
+  it('rejects an invalid email', () => {
+    expect(auth.signIn('toky', 'motdepasse').errorKey).toBe('auth.error.email');
+    expect(auth.isSignedIn()).toBe(false);
   });
 
-  it('refuse un mot de passe trop court', () => {
-    expect(auth.connexion('toky@exemple.fr', '123').ok).toBe(false);
+  it('rejects a password that is too short', () => {
+    expect(auth.signIn('toky@exemple.fr', '123').errorKey).toBe('auth.error.password');
   });
 
-  it('ouvre une session de type CREATOR', () => {
-    expect(auth.connexion('toky@exemple.fr', 'motdepasse').ok).toBe(true);
-    expect(auth.estConnecte()).toBe(true);
+  it('opens a CREATOR session', () => {
+    expect(auth.signIn('toky@exemple.fr', 'motdepasse').ok).toBe(true);
+    expect(auth.isSignedIn()).toBe(true);
     expect(auth.workspaceType()).toBe('CREATOR');
   });
 
-  it('reporte les informations d’inscription sur le profil du créateur', () => {
-    const store = TestBed.inject(EspaceStoreService);
+  it('copies the signup data onto the creator profile', () => {
+    const store = TestBed.inject(WorkspaceStore);
 
-    auth.inscription({
-      nom: 'Alex Nord',
-      pseudo: '@alex.nord',
+    auth.signUp({
+      name: 'Alex Nord',
+      handle: '@alex.nord',
       email: 'alex@exemple.fr',
-      motDePasse: 'motdepasse',
-      sousProfil: 'INFLUENCEUR',
-      plateformes: ['TikTok'],
-      thematique: 'Voyage',
-      pays: 'France',
-      devise: 'EUR',
-      assujettiTva: false,
+      password: 'motdepasse',
+      subProfile: 'INFLUENCER',
+      platforms: ['TikTok'],
+      niche: 'Voyage',
+      country: 'France',
+      currency: 'EUR',
+      vatRegistered: false,
     });
 
-    expect(auth.estConnecte()).toBe(true);
-    expect(store.createur().pseudo).toBe('@alex.nord');
-    expect(store.createur().assujettiTva).toBe(false);
+    expect(auth.isSignedIn()).toBe(true);
+    expect(store.creator().handle).toBe('@alex.nord');
+    expect(store.creator().vatRegistered).toBe(false);
   });
 
-  it('ferme la session à la déconnexion', () => {
-    auth.connexion('toky@exemple.fr', 'motdepasse');
-    auth.deconnexion();
-    expect(auth.estConnecte()).toBe(false);
+  it('closes the session on sign out', () => {
+    auth.signIn('toky@exemple.fr', 'motdepasse');
+    auth.signOut();
+    expect(auth.isSignedIn()).toBe(false);
   });
 });

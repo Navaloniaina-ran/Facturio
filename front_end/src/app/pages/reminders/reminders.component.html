@@ -1,0 +1,221 @@
+<div class="space-y-5">
+  <div class="flex flex-wrap items-end justify-between gap-4">
+    <div>
+      <h1 class="text-xl font-semibold text-slate-900">{{ i18n.vocab('reminders') }}</h1>
+      <p class="mt-1 text-sm text-slate-500">
+        {{ i18n.t('reminders.subtitle', { count: service.queue().length, cap: cap }) }}
+      </p>
+    </div>
+
+    <!-- Mode de fonctionnement -->
+    <div class="flex rounded-xl bg-white p-1 ring-1 ring-slate-200">
+      <button
+        type="button"
+        class="rounded-lg px-3 py-1.5 text-sm font-medium transition"
+        [class]="service.mode() === 'MANUAL' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:text-slate-900'"
+        (click)="changeMode('MANUAL')"
+      >
+        {{ i18n.t('reminders.mode.manual') }}
+      </button>
+      <button
+        type="button"
+        class="rounded-lg px-3 py-1.5 text-sm font-medium transition"
+        [class]="service.mode() === 'AUTO' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:text-slate-900'"
+        (click)="changeMode('AUTO')"
+      >
+        {{ i18n.t('reminders.mode.auto') }}
+      </button>
+    </div>
+  </div>
+
+  <div class="grid gap-3 sm:grid-cols-4">
+    <div class="card p-4">
+      <p class="text-xs text-slate-500">{{ i18n.t('reminders.kpi.today') }}</p>
+      <p class="num mt-1 text-lg font-semibold text-slate-900">{{ service.dueToday() }}</p>
+    </div>
+    <div class="card p-4">
+      <p class="text-xs text-slate-500">{{ i18n.t('reminders.kpi.threeDays') }}</p>
+      <p class="num mt-1 text-lg font-semibold text-sky-600">{{ service.upcoming().length }}</p>
+    </div>
+    <div class="card p-4">
+      <p class="text-xs text-slate-500">{{ i18n.t('reminders.kpi.overdue') }}</p>
+      <p class="num mt-1 text-lg font-semibold text-rose-600">{{ service.pastDue() }}</p>
+    </div>
+    <div class="card p-4">
+      <p class="text-xs text-slate-500">{{ i18n.t('reminders.kpi.sent') }}</p>
+      <p class="num mt-1 text-lg font-semibold text-emerald-600">{{ service.sentThisMonth() }}</p>
+    </div>
+  </div>
+
+  @if (message()) {
+    <p class="rounded-xl bg-brand-50 px-4 py-3 text-sm text-brand-800 ring-1 ring-brand-200">{{ message() }}</p>
+  }
+
+  <div class="grid gap-6 lg:grid-cols-3">
+    <!-- Scénario -->
+    <section class="card p-5">
+      <h2 class="text-sm font-semibold text-slate-900">{{ i18n.t('reminders.scenario') }}</h2>
+      <p class="mt-1 text-xs text-slate-500">{{ i18n.t('reminders.scenarioHint') }}</p>
+
+      <ul class="mt-4 space-y-2">
+        @for (step of service.steps(); track step.id) {
+          <li>
+            <label class="flex cursor-pointer items-start gap-3 rounded-xl px-2 py-2 transition hover:bg-slate-50">
+              <input
+                type="checkbox"
+                class="mt-0.5 size-4 rounded accent-brand-600"
+                [checked]="step.active"
+                [attr.aria-label]="i18n.t(step.labelKey)"
+                (change)="toggleStep(step.id)"
+              />
+              <span class="min-w-0">
+                <span class="block text-sm font-medium text-slate-800">{{ i18n.t(step.labelKey) }}</span>
+                <span class="block text-xs text-slate-500">
+                  {{ i18n.t('reminders.channelTemplate', { template: i18n.t(step.templateKey) }) }}
+                </span>
+              </span>
+            </label>
+          </li>
+        }
+      </ul>
+
+      <p class="mt-4 rounded-xl bg-slate-50 px-3 py-2.5 text-xs text-slate-500">
+        {{ i18n.t('reminders.variables') }}
+      </p>
+    </section>
+
+    <!-- File d'attente -->
+    <section class="card overflow-hidden lg:col-span-2">
+      <div class="flex items-baseline justify-between px-5 py-4">
+        <h2 class="text-sm font-semibold text-slate-900">{{ i18n.t('reminders.queue') }}</h2>
+        <span class="text-xs text-slate-500">
+          {{ service.mode() === 'AUTO' ? i18n.t('reminders.autoOn') : i18n.t('reminders.manualOn') }}
+        </span>
+      </div>
+
+      <ul class="divide-y divide-slate-100">
+        @for (item of service.queue(); track item.invoice.id + item.step.id) {
+          <li class="flex flex-wrap items-center gap-3 px-5 py-4">
+            <div class="min-w-0 flex-1">
+              <p class="truncate text-sm font-semibold text-slate-900">
+                {{ item.invoice.number }} · {{ item.invoice.brandName }}
+              </p>
+              <p class="text-xs text-slate-500">
+                {{ i18n.t(item.step.labelKey) }} ·
+                {{ i18n.t('reminders.plannedOn', { date: (item.scheduledDate | localDate: 'dayMonth') }) }}
+                @if (item.invoice.daysOverdue) {
+                  · J+{{ item.invoice.daysOverdue }}
+                }
+              </p>
+            </div>
+
+            <span class="num text-sm font-semibold text-slate-900">{{ item.invoice.outstanding | amount }}</span>
+
+            <div class="flex items-center gap-0.5">
+              <app-icon-button
+                icon="send"
+                tone="brand"
+                [label]="i18n.t('common.send')"
+                (action)="send(item)"
+              />
+              <app-icon-button
+                icon="postpone"
+                [label]="i18n.t('reminders.postpone')"
+                (action)="postpone(item)"
+              />
+              <app-icon-button
+                icon="template"
+                [label]="i18n.t('reminders.template')"
+                (action)="prepare(item)"
+              />
+            </div>
+          </li>
+        } @empty {
+          <li class="px-5 py-10 text-center text-sm text-slate-500">{{ i18n.t('reminders.queueEmpty') }}</li>
+        }
+      </ul>
+
+      @if (service.upcoming().length) {
+        <div class="border-t border-slate-100 px-5 py-4">
+          <p class="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+            {{ i18n.t('reminders.scheduled') }}
+          </p>
+          <ul class="mt-2 space-y-1.5">
+            @for (item of service.upcoming(); track item.invoice.id + item.step.id) {
+              <li class="flex justify-between text-sm text-slate-600">
+                <span class="truncate">{{ item.invoice.number }} · {{ i18n.t(item.step.labelKey) }}</span>
+                <span class="shrink-0 text-xs text-slate-400">
+                  {{ item.scheduledDate | localDate: 'dayMonth' }}
+                </span>
+              </li>
+            }
+          </ul>
+        </div>
+      }
+    </section>
+  </div>
+
+  <!-- Historique -->
+  <section class="card overflow-hidden">
+    <h2 class="px-5 py-4 text-sm font-semibold text-slate-900">{{ i18n.t('reminders.history') }}</h2>
+
+    <div class="overflow-x-auto">
+      <table class="w-full min-w-[44rem]">
+        <thead class="bg-slate-50/80">
+          <tr>
+            <th class="th-cell">{{ i18n.t('reminders.col.date') }}</th>
+            <th class="th-cell">{{ i18n.t('reminders.col.invoice') }}</th>
+            <th class="th-cell">{{ i18n.t('reminders.col.brand') }}</th>
+            <th class="th-cell">{{ i18n.t('reminders.col.step') }}</th>
+            <th class="th-cell">{{ i18n.t('quotes.col.status') }}</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          @for (reminder of service.history(); track reminder.id) {
+            <tr>
+              <td class="td-cell text-slate-500">
+                {{ (reminder.sentDate ?? reminder.scheduledDate) | localDate }}
+              </td>
+              <td class="td-cell font-medium text-slate-900">{{ reminder.invoiceNumber }}</td>
+              <td class="td-cell">{{ reminder.brandName }}</td>
+              <td class="td-cell">{{ i18n.t(reminder.stepLabelKey) }}</td>
+              <td class="td-cell"><app-status-badge [status]="reminder.status" /></td>
+            </tr>
+          } @empty {
+            <tr>
+              <td class="td-cell text-slate-500" colspan="5">{{ i18n.t('reminders.historyEmpty') }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>
+
+<!-- Message proposé -->
+@if (current(); as item) {
+  <app-modal
+    [title]="i18n.t('reminders.modal.title')"
+    [subtitle]="
+      item.invoice.number +
+      ' · ' +
+      item.invoice.brandName +
+      ' · ' +
+      i18n.t(item.step.templateKey)
+    "
+    [wide]="true"
+    (closed)="close()"
+  >
+    <div class="space-y-5">
+      <textarea rows="12" class="field font-mono text-xs" name="content" [(ngModel)]="content"></textarea>
+      <p class="text-xs text-slate-500">{{ i18n.t('reminders.modal.hint') }}</p>
+
+      <div class="flex justify-end gap-3">
+        <button type="button" class="btn-secondary" (click)="close()">{{ i18n.t('common.cancel') }}</button>
+        <button type="button" class="btn-primary" (click)="sendFromModal()">
+          {{ i18n.t('reminders.modal.send') }}
+        </button>
+      </div>
+    </div>
+  </app-modal>
+}

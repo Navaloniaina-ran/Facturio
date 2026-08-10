@@ -1,0 +1,44 @@
+/* Cible de 2rem : confortable au doigt, discrète dans une ligne de tableau. */
+.icon-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.625rem;
+  color: var(--color-slate-400);
+  transition:
+    background-color 150ms,
+    color 150ms;
+}
+
+.icon-btn svg {
+  width: 1.0625rem;
+  height: 1.0625rem;
+  fill: currentColor;
+}
+
+.icon-btn:hover {
+  background-color: var(--color-slate-100);
+  color: var(--color-slate-900);
+}
+
+.icon-btn:focus-visible {
+  outline: 2px solid var(--color-brand-600);
+  outline-offset: 2px;
+}
+
+/* Les tons signalent la portée de l'action sans la nommer. */
+.tone-brand:hover {
+  background-color: var(--color-brand-50);
+  color: var(--color-brand-700);
+}
+
+.tone-success:hover {
+  background-color: var(--color-emerald-50);
+  color: var(--color-emerald-700);
+}
+
+.tone-danger:hover {
+  background-color: var(--color-rose-50);
+  color: var(--color-rose-700);
+}

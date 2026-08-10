@@ -1,0 +1,191 @@
+<!-- La page ne défile jamais : seule la zone de contenu le fait. -->
+<div class="flex h-dvh overflow-hidden">
+  @if (mobileNavOpen()) {
+    <button
+      type="button"
+      class="fixed inset-0 z-30 bg-night-900/60 backdrop-blur-sm lg:hidden"
+      [attr.aria-label]="i18n.t('shell.closeNav')"
+      (click)="closeNav()"
+    ></button>
+  }
+
+  <!-- Navigation latérale figée -->
+  <aside
+    class="fixed inset-y-0 left-0 z-40 flex h-dvh w-72 shrink-0 flex-col bg-night-900 transition-transform duration-200 lg:static lg:translate-x-0"
+    [class.-translate-x-full]="!mobileNavOpen()"
+  >
+    <div class="flex shrink-0 items-center gap-3 px-6 py-6">
+      <span
+        class="grid size-10 place-items-center rounded-xl bg-gradient-to-br from-brand-400 to-brand-700 text-base font-bold text-white"
+        aria-hidden="true"
+      >F</span>
+      <div>
+        <p class="text-sm font-semibold text-white">{{ i18n.t('app.name') }}</p>
+        <p class="text-xs text-slate-400">{{ i18n.t('app.space') }}</p>
+      </div>
+    </div>
+
+    <nav class="min-h-0 flex-1 space-y-1 overflow-y-auto px-3 pb-4">
+      @for (entry of navigation(); track entry.path) {
+        <a
+          [routerLink]="entry.path"
+          routerLinkActive="bg-white/10 text-white ring-1 ring-white/10"
+          class="group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-400 transition hover:bg-white/5 hover:text-white"
+          (click)="closeNav()"
+        >
+          <svg viewBox="0 0 24 24" class="size-5 shrink-0 fill-current opacity-80" aria-hidden="true">
+            <path [attr.d]="entry.icon" />
+          </svg>
+          <span class="flex-1">{{ entry.label }}</span>
+
+          @if (entry.badge > 0) {
+            <span class="rounded-full bg-rose-500/20 px-2 py-0.5 text-xs font-semibold text-rose-300">
+              {{ entry.badge }}
+            </span>
+          }
+        </a>
+      }
+    </nav>
+
+    <!-- Rappel de l'offre : le détail vit dans le menu utilisateur -->
+    <a
+      routerLink="abonnement"
+      class="m-4 flex shrink-0 items-center justify-between gap-3 rounded-xl bg-white/5 px-3 py-2.5 text-xs text-slate-400 transition hover:bg-white/10 hover:text-white"
+      (click)="closeNav()"
+    >
+      {{ i18n.t('shell.plan', { plan: creator().plan }) }}
+      <span aria-hidden="true">→</span>
+    </a>
+  </aside>
+
+  <!-- Colonne de contenu -->
+  <div class="flex min-w-0 flex-1 flex-col overflow-hidden">
+    <header class="shrink-0 border-b border-slate-200/80 bg-white/70 backdrop-blur">
+      <div class="flex items-center gap-2 px-4 py-4 sm:gap-3 sm:px-6 lg:px-8">
+        <button
+          type="button"
+          class="btn-secondary px-2.5 py-2 lg:hidden"
+          [attr.aria-label]="i18n.t('shell.openNav')"
+          (click)="toggleNav()"
+        >
+          <svg viewBox="0 0 24 24" class="size-5 fill-current" aria-hidden="true">
+            <path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z" />
+          </svg>
+        </button>
+
+        <div class="min-w-0 flex-1">
+          <p class="truncate text-lg font-semibold text-slate-900">
+            {{ i18n.t('shell.greeting', { name: firstName() }) }}
+          </p>
+          <p class="truncate text-xs text-slate-500">{{ i18n.t('shell.subtitle') }}</p>
+        </div>
+
+        <span class="hidden rounded-xl bg-white px-3 py-2 text-xs font-semibold text-slate-600 capitalize ring-1 ring-slate-200 sm:inline-block">
+          {{ period() }}
+        </span>
+
+        <!-- Langue de l'interface -->
+        <app-language-switch />
+
+        <a
+          routerLink="relances"
+          class="relative grid size-10 place-items-center rounded-xl bg-white text-slate-500 ring-1 ring-slate-200 transition hover:text-slate-900"
+          [attr.aria-label]="i18n.t('shell.notifications', { count: notificationCount() })"
+        >
+          <svg viewBox="0 0 24 24" class="size-5 fill-current" aria-hidden="true">
+            <path d="M12 2a6 6 0 0 0-6 6v5l-2 3h16l-2-3V8a6 6 0 0 0-6-6zm-3 18h6a3 3 0 0 1-6 0z" />
+          </svg>
+          @if (notificationCount() > 0) {
+            <span class="absolute -top-1 -right-1 grid size-5 place-items-center rounded-full bg-rose-500 text-[10px] font-bold text-white">
+              {{ notificationCount() }}
+            </span>
+          }
+        </a>
+
+        <!-- Menu utilisateur -->
+        <div class="relative">
+          <button
+            type="button"
+            class="flex items-center gap-2 rounded-xl bg-white py-1.5 pr-2 pl-1.5 ring-1 ring-slate-200 transition hover:bg-slate-50"
+            [attr.aria-expanded]="userMenuOpen()"
+            aria-haspopup="menu"
+            (click)="toggleUserMenu()"
+          >
+            <span class="grid size-8 place-items-center rounded-lg bg-brand-600 text-xs font-bold text-white">
+              {{ initials() }}
+            </span>
+            <span class="hidden max-w-32 truncate text-sm font-medium text-slate-800 sm:block">
+              {{ creator().name }}
+            </span>
+            <svg viewBox="0 0 24 24" class="size-4 fill-slate-400" aria-hidden="true">
+              <path d="M12 15.5 5.5 9l1.4-1.4L12 12.7l5.1-5.1L18.5 9z" />
+            </svg>
+          </button>
+
+          @if (userMenuOpen()) {
+            <!-- Fermeture au clic à l'extérieur -->
+            <button
+              type="button"
+              class="fixed inset-0 z-40 cursor-default"
+              tabindex="-1"
+              [attr.aria-label]="i18n.t('common.close')"
+              (click)="closeUserMenu()"
+            ></button>
+
+            <div
+              class="absolute right-0 z-50 mt-2 w-64 overflow-hidden rounded-2xl bg-white ring-1 ring-slate-900/10"
+              role="menu"
+            >
+              <div class="border-b border-slate-100 px-4 py-3">
+                <p class="truncate text-sm font-semibold text-slate-900">{{ creator().name }}</p>
+                <p class="truncate text-xs text-slate-500">{{ creator().email }}</p>
+              </div>
+
+              <a
+                routerLink="abonnement"
+                role="menuitem"
+                class="flex items-center justify-between gap-3 px-4 py-3 text-sm text-slate-700 transition hover:bg-slate-50"
+                (click)="closeUserMenu()"
+              >
+                <span>{{ i18n.t('shell.mySubscription') }}</span>
+                <span class="rounded-full bg-brand-50 px-2 py-0.5 text-xs font-semibold text-brand-700">
+                  {{ creator().plan }}
+                </span>
+              </a>
+
+              <a
+                routerLink="parametres"
+                role="menuitem"
+                class="block border-t border-slate-100 px-4 py-3 text-sm text-slate-700 transition hover:bg-slate-50"
+                (click)="closeUserMenu()"
+              >
+                {{ i18n.t('nav.settings') }}
+              </a>
+
+              <button
+                type="button"
+                role="menuitem"
+                class="w-full border-t border-slate-100 px-4 py-3 text-left text-sm font-medium text-rose-600 transition hover:bg-rose-50"
+                (click)="signOut()"
+              >
+                {{ i18n.t('shell.signOut') }}
+              </button>
+            </div>
+          }
+        </div>
+      </div>
+    </header>
+
+    <!-- Seule zone défilante de l'application -->
+    <main class="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-6 sm:px-6 lg:px-8">
+      <router-outlet />
+
+      <footer class="mt-8 text-xs text-slate-400">
+        {{ i18n.t('shell.footer', { currency: creator().currency }) }}
+        @if (remainingTasks() > 0) {
+          · {{ i18n.t('shell.onboardingLeft', { count: remainingTasks() }) }}
+        }
+      </footer>
+    </main>
+  </div>
+</div>

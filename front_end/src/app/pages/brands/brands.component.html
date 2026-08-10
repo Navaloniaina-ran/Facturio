@@ -1,0 +1,252 @@
+<div class="space-y-5">
+  <!-- En-tête -->
+  <div class="flex flex-wrap items-end justify-between gap-4">
+    <div>
+      <h1 class="text-xl font-semibold text-slate-900">{{ i18n.vocab('clients') }}</h1>
+      <p class="mt-1 text-sm text-slate-500">
+        {{ i18n.t('brands.subtitle', { count: service.list().length, late: service.latePayerCount() }) }}
+      </p>
+    </div>
+    <div class="flex gap-2">
+      <button type="button" class="btn-secondary" (click)="exportCsv()">{{ i18n.t('common.export') }}</button>
+      <button type="button" class="btn-primary" (click)="openCreate()">{{ i18n.t('brands.new') }}</button>
+    </div>
+  </div>
+
+  @if (message()) {
+    <p class="rounded-xl bg-brand-50 px-4 py-3 text-sm text-brand-800 ring-1 ring-brand-200">{{ message() }}</p>
+  }
+
+  <!-- Filtres -->
+  <div class="flex flex-wrap items-center gap-3">
+    <input
+      class="field max-w-xs"
+      type="search"
+      name="search"
+      [placeholder]="i18n.t('brands.searchPlaceholder')"
+      [attr.aria-label]="i18n.t('brands.searchLabel')"
+      [ngModel]="search()"
+      (ngModelChange)="search.set($event)"
+    />
+    <button
+      type="button"
+      class="rounded-full px-3.5 py-1.5 text-sm font-medium ring-1 transition"
+      [class]="latePayersOnly() ? 'bg-rose-600 text-white ring-rose-600' : 'bg-white text-slate-600 ring-slate-200 hover:bg-slate-50'"
+      [attr.aria-pressed]="latePayersOnly()"
+      (click)="latePayersOnly.set(!latePayersOnly())"
+    >
+      {{ i18n.t('brands.badPayers') }}
+    </button>
+  </div>
+
+  <!-- Liste -->
+  <div class="card overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="w-full min-w-[54rem]">
+        <thead class="bg-slate-50/80">
+          <tr>
+            <th class="th-cell">{{ i18n.t('brands.col.brand') }}</th>
+            <th class="th-cell">{{ i18n.t('brands.col.contact') }}</th>
+            <th class="th-cell text-right">{{ i18n.t('brands.col.invoices') }}</th>
+            <th class="th-cell text-right">{{ i18n.t('brands.col.invoiced') }}</th>
+            <th class="th-cell text-right">{{ i18n.t('brands.col.outstanding') }}</th>
+            <th class="th-cell">{{ i18n.t('brands.col.lastActivity') }}</th>
+            <th class="th-cell text-right">{{ i18n.t('brands.col.actions') }}</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          @for (brand of filtered(); track brand.id) {
+            <tr class="hover:bg-slate-50/70">
+              <td class="td-cell">
+                <button
+                  type="button"
+                  class="text-left font-semibold text-slate-900 hover:text-brand-600"
+                  (click)="openSheet(brand)"
+                >
+                  {{ brand.name }}
+                </button>
+                <div class="mt-1 flex gap-1.5">
+                  @if (brand.latePayer) {
+                    <app-status-badge status="OVERDUE" />
+                  }
+                  @if (brand.remindersPaused) {
+                    <span class="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-500">
+                      {{ i18n.t('brands.paused') }}
+                    </span>
+                  }
+                </div>
+              </td>
+              <td class="td-cell">
+                <p>{{ brand.contact || '—' }}</p>
+                <p class="text-xs text-slate-500">{{ brand.email }}</p>
+              </td>
+              <td class="td-cell num text-right">{{ brand.invoiceCount }}</td>
+              <td class="td-cell num text-right">{{ brand.totalInvoiced | amount }}</td>
+              <td
+                class="td-cell num text-right font-semibold"
+                [class]="brand.outstanding > 0 ? 'text-rose-600' : 'text-slate-500'"
+              >
+                {{ brand.outstanding | amount }}
+              </td>
+              <td class="td-cell text-slate-500">{{ brand.lastActivity | localDate }}</td>
+              <td class="td-cell">
+                <div class="flex items-center justify-end gap-0.5">
+                  <app-icon-button
+                    icon="view"
+                    [label]="i18n.t('preview.open')"
+                    (action)="openSheet(brand)"
+                  />
+                  <app-icon-button
+                    icon="edit"
+                    tone="brand"
+                    [label]="i18n.t('common.edit')"
+                    (action)="openEdit(brand)"
+                  />
+                  <app-icon-button
+                    [icon]="brand.remindersPaused ? 'resume' : 'pause'"
+                    [label]="brand.remindersPaused ? i18n.t('brands.resume') : i18n.t('brands.pause')"
+                    (action)="togglePause(brand)"
+                  />
+                  <app-icon-button
+                    icon="delete"
+                    tone="danger"
+                    [label]="i18n.t('common.delete')"
+                    (action)="remove(brand)"
+                  />
+                </div>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td class="td-cell text-slate-500" colspan="7">{{ i18n.t('brands.empty') }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Formulaire de création / modification -->
+@if (modal() === 'form') {
+  <app-modal
+    [title]="editedId ? i18n.t('brands.form.edit') : i18n.t('brands.form.new')"
+    [subtitle]="i18n.t('brands.form.subtitle')"
+    (closed)="close()"
+  >
+    <form class="space-y-5" (ngSubmit)="save()">
+      <div>
+        <label class="field-label" for="name">{{ i18n.t('brands.form.name') }}</label>
+        <input id="name" name="name" class="field" placeholder="Nike" [(ngModel)]="form.name" required />
+      </div>
+
+      <div class="grid gap-4 sm:grid-cols-2">
+        <div>
+          <label class="field-label" for="contact">{{ i18n.t('brands.form.contact') }}</label>
+          <input id="contact" name="contact" class="field" [(ngModel)]="form.contact" />
+        </div>
+        <div>
+          <label class="field-label" for="email">{{ i18n.t('brands.form.email') }}</label>
+          <input id="email" name="email" type="email" class="field" [(ngModel)]="form.email" />
+        </div>
+      </div>
+
+      <div class="grid gap-4 sm:grid-cols-2">
+        <div>
+          <label class="field-label" for="phone">{{ i18n.t('brands.form.phone') }}</label>
+          <input id="phone" name="phone" class="field" [(ngModel)]="form.phone" />
+        </div>
+        <div>
+          <label class="field-label" for="address">{{ i18n.t('brands.form.address') }}</label>
+          <input id="address" name="address" class="field" [(ngModel)]="form.address" />
+        </div>
+      </div>
+
+      <div>
+        <label class="field-label" for="terms">{{ i18n.t('brands.form.terms') }}</label>
+        <input id="terms" name="terms" type="number" min="0" class="field" [(ngModel)]="form.paymentTermsDays" />
+        <p class="mt-1 text-xs text-slate-500">{{ i18n.t('brands.form.termsHint') }}</p>
+      </div>
+
+      <div>
+        <label class="field-label" for="notes">{{ i18n.t('brands.form.notes') }}</label>
+        <textarea id="notes" name="notes" rows="2" class="field" [(ngModel)]="form.notes"></textarea>
+      </div>
+
+      @if (error()) {
+        <p class="rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700 ring-1 ring-rose-200" role="alert">{{ error() }}</p>
+      }
+
+      <div class="flex justify-end gap-3">
+        <button type="button" class="btn-secondary" (click)="close()">{{ i18n.t('common.cancel') }}</button>
+        <button type="submit" class="btn-primary">{{ i18n.t('common.save') }}</button>
+      </div>
+    </form>
+  </app-modal>
+}
+
+<!-- Fiche marque -->
+@if (modal() === 'sheet' && selected(); as brand) {
+  <app-modal
+    [title]="brand.name"
+    [subtitle]="brand.contact + ' · ' + brand.email"
+    [wide]="true"
+    (closed)="close()"
+  >
+    <div class="space-y-6">
+      <dl class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div class="rounded-xl bg-slate-50 p-3">
+          <dt class="text-xs text-slate-500">{{ i18n.t('brands.sheet.invoiced') }}</dt>
+          <dd class="num mt-1 font-semibold text-slate-900">{{ brand.totalInvoiced | amount }}</dd>
+        </div>
+        <div class="rounded-xl bg-slate-50 p-3">
+          <dt class="text-xs text-slate-500">{{ i18n.t('brands.sheet.paid') }}</dt>
+          <dd class="num mt-1 font-semibold text-emerald-600">{{ brand.totalPaid | amount }}</dd>
+        </div>
+        <div class="rounded-xl bg-slate-50 p-3">
+          <dt class="text-xs text-slate-500">{{ i18n.t('brands.col.outstanding') }}</dt>
+          <dd class="num mt-1 font-semibold text-rose-600">{{ brand.outstanding | amount }}</dd>
+        </div>
+        <div class="rounded-xl bg-slate-50 p-3">
+          <dt class="text-xs text-slate-500">{{ i18n.t('brands.sheet.avgDelay') }}</dt>
+          <dd class="num mt-1 font-semibold text-slate-900">
+            {{ brand.averageDelay }} {{ i18n.t('common.days') }}
+          </dd>
+        </div>
+      </dl>
+
+      <section>
+        <h3 class="text-sm font-semibold text-slate-900">{{ i18n.vocab('projects') }}</h3>
+        <ul class="mt-2 divide-y divide-slate-100">
+          @for (campaign of campaignsOf(brand.id); track campaign.id) {
+            <li class="flex items-center justify-between py-2 text-sm">
+              <span class="text-slate-700">{{ campaign.name }}</span>
+              <app-status-badge [status]="campaign.status" />
+            </li>
+          } @empty {
+            <li class="py-2 text-sm text-slate-500">{{ i18n.t('brands.sheet.noCampaign') }}</li>
+          }
+        </ul>
+      </section>
+
+      <section>
+        <h3 class="text-sm font-semibold text-slate-900">{{ i18n.vocab('invoices') }}</h3>
+        <ul class="mt-2 divide-y divide-slate-100">
+          @for (invoice of invoicesOf(brand.id); track invoice.id) {
+            <li class="flex items-center justify-between gap-3 py-2 text-sm">
+              <span class="text-slate-700">{{ invoice.number || i18n.t('common.draft') }}</span>
+              <span class="num text-slate-900">{{ invoice.totalInclVat | amount }}</span>
+              <app-status-badge [status]="invoice.status" />
+            </li>
+          } @empty {
+            <li class="py-2 text-sm text-slate-500">{{ i18n.t('brands.sheet.noInvoice') }}</li>
+          }
+        </ul>
+      </section>
+
+      @if (brand.notes) {
+        <p class="rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-800 ring-1 ring-amber-200">{{ brand.notes }}</p>
+      }
+    </div>
+  </app-modal>
+}

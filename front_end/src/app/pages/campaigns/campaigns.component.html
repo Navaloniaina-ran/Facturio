@@ -1,0 +1,257 @@
+<div class="space-y-5">
+  <div class="flex flex-wrap items-end justify-between gap-4">
+    <div>
+      <h1 class="text-xl font-semibold text-slate-900">{{ i18n.vocab('projects') }}</h1>
+      <p class="mt-1 text-sm text-slate-500">
+        {{ i18n.t('campaigns.subtitle', { count: service.list().length, active: service.active().length }) }}
+      </p>
+    </div>
+    <button type="button" class="btn-primary" (click)="openCreate()">{{ i18n.t('campaigns.new') }}</button>
+  </div>
+
+  @if (!service.moduleAllowed()) {
+    <p class="rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-800 ring-1 ring-amber-200">
+      {{ i18n.t('campaigns.planNotice') }}
+    </p>
+  }
+
+  @if (message()) {
+    <p class="rounded-xl bg-brand-50 px-4 py-3 text-sm text-brand-800 ring-1 ring-brand-200">{{ message() }}</p>
+  }
+
+  <div class="flex flex-wrap items-center gap-2">
+    @for (item of tabs; track item) {
+      <button
+        type="button"
+        class="rounded-full px-3.5 py-1.5 text-sm font-medium ring-1 transition"
+        [class]="tab() === item ? 'bg-slate-900 text-white ring-slate-900' : 'bg-white text-slate-600 ring-slate-200 hover:bg-slate-50'"
+        (click)="tab.set(item)"
+      >
+        {{ tabLabel(item) }}
+      </button>
+    }
+  </div>
+
+  <!-- Cartes de campagne -->
+  <div class="grid gap-4 lg:grid-cols-2">
+    @for (campaign of filtered(); track campaign.id) {
+      <article class="card flex flex-col p-5">
+        <div class="flex items-start justify-between gap-3">
+          <div class="min-w-0">
+            <button
+              type="button"
+              class="truncate text-left text-base font-semibold text-slate-900 hover:text-brand-600"
+              (click)="openDetail(campaign)"
+            >
+              {{ campaign.name }}
+            </button>
+            <p class="mt-0.5 text-sm text-slate-500">
+              {{ campaign.brandName }} · {{ campaign.startDate | localDate: 'dayMonth' }} →
+              {{ campaign.endDate | localDate }}
+            </p>
+          </div>
+          <app-status-badge [status]="campaign.status" />
+        </div>
+
+        <p class="num mt-4 text-2xl font-semibold text-slate-900">{{ campaign.totalInclVat | amount }}</p>
+        <p class="text-xs text-slate-500">
+          {{ i18n.t('dashboard.deliverableCount', { count: campaign.deliverableCount }) }}
+        </p>
+
+        <!-- Chaîne d'avancement -->
+        <div class="mt-4 grid grid-cols-4 gap-2">
+          @for (step of campaign.chain; track step.labelKey) {
+            <div class="text-center">
+              <div class="h-1.5 rounded-full" [class]="step.done ? 'bg-emerald-500' : 'bg-slate-200'"></div>
+              <p class="mt-1.5 text-[11px]" [class]="step.done ? 'text-slate-700' : 'text-slate-400'">
+                {{ i18n.t(step.labelKey) }}
+              </p>
+            </div>
+          }
+        </div>
+
+        <div class="mt-5 flex items-center gap-0.5 border-t border-slate-100 pt-4">
+          <app-icon-button
+            icon="view"
+            [label]="i18n.t('preview.open')"
+            (action)="openDetail(campaign)"
+          />
+          @if (!campaign.quoteAccepted) {
+            <app-icon-button
+              icon="quote"
+              tone="brand"
+              [label]="i18n.t('campaigns.generateQuote')"
+              (action)="generateQuote(campaign)"
+            />
+          }
+          @if (campaign.status !== 'COMPLETED' && campaign.status !== 'CANCELLED') {
+            <app-icon-button
+              icon="invoice"
+              tone="brand"
+              [label]="i18n.t('campaigns.generateInvoice')"
+              (action)="generateInvoice(campaign)"
+            />
+          }
+          @if (!campaign.contractSigned) {
+            <app-icon-button
+              icon="contract"
+              [label]="i18n.t('campaigns.attachContract')"
+              (action)="attachContract(campaign)"
+            />
+          }
+          <app-icon-button
+            icon="duplicate"
+            [label]="i18n.t('common.duplicate')"
+            (action)="duplicate(campaign)"
+          />
+          @if (campaign.status === 'ACTIVE') {
+            <app-icon-button
+              icon="close"
+              tone="success"
+              [label]="i18n.t('campaigns.close')"
+              (action)="closeCampaign(campaign)"
+            />
+          }
+        </div>
+      </article>
+    } @empty {
+      <p class="card p-8 text-center text-sm text-slate-500 lg:col-span-2">{{ i18n.t('campaigns.empty') }}</p>
+    }
+  </div>
+</div>
+
+<!-- Création -->
+@if (modal() === 'create') {
+  <app-modal
+    [title]="i18n.t('campaigns.new')"
+    [subtitle]="i18n.t('campaigns.form.subtitle')"
+    [wide]="true"
+    (closed)="close()"
+  >
+    <form class="space-y-6" (ngSubmit)="save()">
+      <div class="grid gap-4 sm:grid-cols-2">
+        <div>
+          <label class="field-label" for="brand">{{ i18n.t('campaigns.form.brand') }}</label>
+          <select id="brand" name="brand" class="field" [(ngModel)]="draft.brandId">
+            @for (brand of brands(); track brand.id) {
+              <option [value]="brand.id">{{ brand.name }}</option>
+            }
+          </select>
+        </div>
+        <div>
+          <label class="field-label" for="name">{{ i18n.t('campaigns.form.name') }}</label>
+          <input id="name" name="name" class="field" placeholder="Nike Summer" [(ngModel)]="draft.name" required />
+        </div>
+      </div>
+
+      <div class="grid gap-4 sm:grid-cols-2">
+        <div>
+          <label class="field-label" for="start">{{ i18n.t('campaigns.form.start') }}</label>
+          <input id="start" name="start" type="date" class="field" [(ngModel)]="draft.startDate" />
+        </div>
+        <div>
+          <label class="field-label" for="end">{{ i18n.t('campaigns.form.end') }}</label>
+          <input id="end" name="end" type="date" class="field" [(ngModel)]="draft.endDate" />
+        </div>
+      </div>
+
+      <app-line-editor [lines]="lines" (add)="addLine()" (remove)="removeLine($event)" />
+
+      @if (error()) {
+        <p class="rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700 ring-1 ring-rose-200" role="alert">{{ error() }}</p>
+      }
+
+      <div class="flex justify-end gap-3">
+        <button type="button" class="btn-secondary" (click)="close()">{{ i18n.t('common.cancel') }}</button>
+        <button type="submit" class="btn-primary">{{ i18n.t('campaigns.form.submit') }}</button>
+      </div>
+    </form>
+  </app-modal>
+}
+
+<!-- Détail -->
+@if (modal() === 'detail' && current(); as campaign) {
+  <app-modal
+    [title]="campaign.name"
+    [subtitle]="campaign.brandName + ' · ' + campaign.startDate + ' → ' + campaign.endDate"
+    [wide]="true"
+    (closed)="close()"
+  >
+    <div class="space-y-6">
+      <div class="flex flex-wrap items-center gap-3">
+        <app-status-badge [status]="campaign.status" />
+        <span class="text-sm text-slate-500">
+          {{ i18n.t('campaigns.progress', { value: campaign.progress }) }}
+        </span>
+        @if (campaign.contractName) {
+          <span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs text-slate-600">{{ campaign.contractName }}</span>
+        }
+      </div>
+
+      <section>
+        <h3 class="text-sm font-semibold text-slate-900">{{ i18n.vocab('items') }}</h3>
+        <ul class="mt-2 divide-y divide-slate-100 text-sm">
+          @for (deliverable of campaign.deliverables; track deliverable.id) {
+            <li class="flex items-center justify-between gap-3 py-2.5">
+              <span class="text-slate-700">
+                {{ deliverable.quantity }} × {{ deliverable.description }}
+                <span class="text-xs text-slate-400">({{ i18n.deliverable(deliverable.deliverableType) }})</span>
+              </span>
+              <span class="num font-medium text-slate-900">
+                {{ deliverable.quantity * deliverable.unitPrice | amount }}
+              </span>
+            </li>
+          }
+        </ul>
+        <div class="mt-3 flex justify-between rounded-xl bg-slate-900 px-4 py-3 text-sm text-white">
+          <span>{{ i18n.t('invoices.detail.totalTtc') }}</span>
+          <span class="num font-semibold">{{ campaign.totalInclVat | amount }}</span>
+        </div>
+      </section>
+
+      <section>
+        <h3 class="text-sm font-semibold text-slate-900">{{ i18n.t('campaigns.chain') }}</h3>
+        <ol class="mt-2 space-y-2 text-sm">
+          @for (step of campaign.chain; track step.labelKey) {
+            <li class="flex items-center gap-3">
+              <span
+                class="grid size-5 place-items-center rounded-full text-[11px] font-bold"
+                [class]="step.done ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-400'"
+              >{{ step.done ? '✓' : '○' }}</span>
+              <span [class]="step.done ? 'text-slate-700' : 'text-slate-400'">{{ i18n.t(step.labelKey) }}</span>
+            </li>
+          }
+        </ol>
+      </section>
+
+      <section>
+        <h3 class="text-sm font-semibold text-slate-900">{{ i18n.t('campaigns.linkedInvoices') }}</h3>
+        <ul class="mt-2 divide-y divide-slate-100 text-sm">
+          @for (invoice of campaign.invoices; track invoice.id) {
+            <li class="flex items-center justify-between gap-3 py-2">
+              <span class="text-slate-700">{{ invoice.number || i18n.t('common.draft') }}</span>
+              <span class="num text-slate-900">{{ invoice.totalInclVat | amount }}</span>
+              <app-status-badge [status]="invoice.status" />
+            </li>
+          } @empty {
+            <li class="py-2 text-slate-500">{{ i18n.t('campaigns.noInvoice') }}</li>
+          }
+        </ul>
+      </section>
+
+      <div class="flex flex-wrap justify-end gap-3 border-t border-slate-100 pt-4">
+        @if (!campaign.contractSigned) {
+          <button type="button" class="btn-secondary" (click)="attachContract(campaign)">
+            {{ i18n.t('campaigns.attachContract') }}
+          </button>
+        }
+        <button type="button" class="btn-secondary" (click)="duplicate(campaign)">
+          {{ i18n.t('common.duplicate') }}
+        </button>
+        <button type="button" class="btn-primary" (click)="generateInvoice(campaign)">
+          {{ i18n.t('campaigns.generateInvoice') }}
+        </button>
+      </div>
+    </div>
+  </app-modal>
+}

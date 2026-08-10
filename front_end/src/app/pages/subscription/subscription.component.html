@@ -1,0 +1,202 @@
+<div class="space-y-5">
+  <div class="page-head">
+    <div>
+      <h1 class="page-title">{{ i18n.t('nav.subscription') }}</h1>
+      <p class="page-subtitle">{{ i18n.t('subscription.subtitle') }}</p>
+    </div>
+
+    <!-- Périodicité -->
+    <div class="segmented">
+      <button
+        type="button"
+        [attr.aria-pressed]="service.current().cycle === 'MONTHLY'"
+        (click)="setCycle('MONTHLY')"
+      >
+        {{ i18n.t('subscription.monthly') }}
+      </button>
+      <button
+        type="button"
+        [attr.aria-pressed]="service.current().cycle === 'ANNUAL'"
+        (click)="setCycle('ANNUAL')"
+      >
+        {{ i18n.t('subscription.annual') }}
+      </button>
+    </div>
+  </div>
+
+  @if (message()) {
+    <p class="flash">{{ message() }}</p>
+  }
+
+  @if (service.current().cancelAtPeriodEnd) {
+    <p class="alert-warning">
+      {{ i18n.t('subscription.cancelNotice', { date: service.current().nextBillingDate }) }}
+    </p>
+  }
+
+  <div class="grid gap-6 lg:grid-cols-3">
+    <!-- Offre en cours -->
+    <section class="card p-5">
+      <p class="stat-label">{{ i18n.t('subscription.currentPlan') }}</p>
+      <p class="mt-1 text-2xl font-semibold text-slate-900">{{ service.current().plan }}</p>
+      <p class="num mt-1 text-sm text-slate-500">
+        {{ service.price() | amount }}
+        {{ service.current().cycle === 'ANNUAL' ? i18n.t('subscription.perYear') : i18n.t('subscription.perMonth') }}
+      </p>
+
+      <dl class="mt-5 space-y-3 text-sm">
+        <div class="flex items-center justify-between">
+          <dt class="text-slate-500">{{ i18n.t('subscription.status') }}</dt>
+          <dd><app-status-badge [status]="service.current().status" /></dd>
+        </div>
+        <div class="flex items-center justify-between">
+          <dt class="text-slate-500">{{ i18n.t('subscription.nextBilling') }}</dt>
+          <dd class="num font-medium text-slate-900">
+            {{ service.current().nextBillingDate | localDate }}
+          </dd>
+        </div>
+      </dl>
+
+      <div class="mt-5 border-t border-slate-100 pt-4">
+        @if (service.current().cancelAtPeriodEnd) {
+          <button type="button" class="btn-primary w-full" (click)="resume()">
+            {{ i18n.t('subscription.resume') }}
+          </button>
+        } @else {
+          <button type="button" class="btn-secondary w-full" (click)="cancel()">
+            {{ i18n.t('subscription.cancel') }}
+          </button>
+        }
+      </div>
+    </section>
+
+    <!-- Consommation -->
+    <section class="card p-5 lg:col-span-2">
+      <h2 class="text-sm font-semibold text-slate-900">{{ i18n.t('subscription.usage') }}</h2>
+
+      <ul class="mt-4 space-y-4">
+        @for (row of service.usage(); track row.labelKey) {
+          <li>
+            <div class="flex items-baseline justify-between text-sm">
+              <span class="text-slate-700">{{ i18n.t(row.labelKey) }}</span>
+              <span class="num font-semibold text-slate-900">
+                {{ row.used }} /
+                {{ row.limit === null ? i18n.t('subscription.unlimited') : row.limit }}
+              </span>
+            </div>
+            <div class="meter mt-1.5">
+              <span [style.width.%]="row.limit === null ? 6 : row.share"></span>
+            </div>
+          </li>
+        }
+      </ul>
+
+      <p class="mt-5 text-xs text-slate-500">{{ i18n.t('subscription.retention') }}</p>
+    </section>
+  </div>
+
+  <!-- Offres -->
+  <section>
+    <h2 class="text-sm font-semibold text-slate-900">{{ i18n.t('subscription.plans') }}</h2>
+
+    <div class="mt-3 grid gap-4 md:grid-cols-3">
+      @for (offer of service.offers(); track offer.code) {
+        <article
+          class="card card-interactive flex flex-col p-5"
+          [class]="offer.code === service.current().plan ? 'ring-2 ring-brand-500' : ''"
+        >
+          <div class="flex items-center justify-between gap-2">
+            <p class="font-semibold text-slate-900">{{ offer.code }}</p>
+            @if (offer.code === service.current().plan) {
+              <span class="rounded-full bg-brand-50 px-2.5 py-1 text-xs font-semibold text-brand-700">
+                {{ i18n.t('subscription.currentBadge') }}
+              </span>
+            }
+          </div>
+
+          <p class="mt-1 text-xs text-slate-500">{{ i18n.t(offer.taglineKey) }}</p>
+
+          <p class="num mt-3 text-2xl font-semibold text-slate-900">
+            {{ priceOf(offer) | amount }}
+            <span class="text-sm font-normal text-slate-500">
+              {{ service.current().cycle === 'ANNUAL' ? i18n.t('subscription.perYear') : i18n.t('subscription.perMonth') }}
+            </span>
+          </p>
+
+          <ul class="mt-4 flex-1 space-y-2 text-sm">
+            @for (feature of offer.features; track feature.key) {
+              <li class="flex items-start gap-2" [class]="feature.included ? 'text-slate-700' : 'text-slate-400'">
+                <svg viewBox="0 0 24 24" class="mt-0.5 size-4 shrink-0 fill-current" aria-hidden="true">
+                  @if (feature.included) {
+                    <path d="M9.5 17.5 4 12l1.4-1.4 4.1 4.1 8.6-8.6L19.5 7.5z" />
+                  } @else {
+                    <path d="M6.4 5 5 6.4l5.6 5.6L5 17.6 6.4 19l5.6-5.6 5.6 5.6 1.4-1.4-5.6-5.6L19 6.4 17.6 5 12 10.6z" />
+                  }
+                </svg>
+                <span [class.line-through]="!feature.included">
+                  {{ i18n.t(feature.key, { value: feature.value }) }}
+                </span>
+              </li>
+            }
+          </ul>
+
+          <button
+            type="button"
+            class="mt-5"
+            [class]="offer.code === service.current().plan ? 'btn-secondary' : 'btn-primary'"
+            [disabled]="offer.code === service.current().plan"
+            (click)="choose(offer.code)"
+          >
+            {{
+              offer.code === service.current().plan
+                ? i18n.t('subscription.currentBadge')
+                : i18n.t('subscription.choose')
+            }}
+          </button>
+        </article>
+      }
+    </div>
+  </section>
+
+  <!-- Factures d'abonnement -->
+  <section class="card overflow-hidden">
+    <h2 class="px-5 py-4 text-sm font-semibold text-slate-900">
+      {{ i18n.t('subscription.invoices') }}
+    </h2>
+
+    <div class="overflow-x-auto">
+      <table class="w-full min-w-[36rem]">
+        <thead class="bg-slate-50/80">
+          <tr>
+            <th class="th-cell">{{ i18n.t('subscription.invoice.number') }}</th>
+            <th class="th-cell">{{ i18n.t('subscription.invoice.date') }}</th>
+            <th class="th-cell">{{ i18n.t('subscription.invoice.plan') }}</th>
+            <th class="th-cell text-right">{{ i18n.t('subscription.invoice.amount') }}</th>
+            <th class="th-cell">{{ i18n.t('quotes.col.status') }}</th>
+            <th class="th-cell text-right">{{ i18n.t('brands.col.actions') }}</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          @for (invoice of service.platformInvoices(); track invoice.id) {
+            <tr class="hover:bg-slate-50/70">
+              <td class="td-cell font-medium text-slate-900">{{ invoice.number }}</td>
+              <td class="td-cell text-slate-500">{{ invoice.date | localDate }}</td>
+              <td class="td-cell">{{ invoice.plan }}</td>
+              <td class="td-cell num text-right font-semibold">{{ invoice.amount | amount }}</td>
+              <td class="td-cell"><app-status-badge [status]="invoice.status" /></td>
+              <td class="td-cell">
+                <div class="flex justify-end">
+                  <app-icon-button
+                    icon="details"
+                    [label]="i18n.t('subscription.download')"
+                    (action)="download(invoice)"
+                  />
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>

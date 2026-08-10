@@ -1,0 +1,566 @@
+<div class="space-y-5">
+  <!-- En-tête -->
+  <div class="page-head">
+    <div>
+      <h1 class="page-title">{{ i18n.vocab('invoices') }}</h1>
+      <p class="page-subtitle">
+        {{ i18n.t('invoices.subtitle', { count: service.list().length, overdue: service.overdue().length }) }}
+      </p>
+    </div>
+    <button type="button" class="btn-primary" (click)="openCreate()">{{ i18n.t('invoices.new') }}</button>
+  </div>
+
+  <!-- Synthèse -->
+  <div class="grid gap-3 sm:grid-cols-4">
+    <div class="card p-4">
+      <p class="stat-label">{{ i18n.t('invoices.sum.invoiced') }}</p>
+      <p class="stat-value">{{ service.revenue() | amount }}</p>
+    </div>
+    <div class="card p-4">
+      <p class="stat-label">{{ i18n.t('kpi.collected') }}</p>
+      <p class="stat-value text-emerald-600">{{ service.collected() | amount }}</p>
+    </div>
+    <div class="card p-4">
+      <p class="stat-label">{{ i18n.t('kpi.pending') }}</p>
+      <p class="stat-value text-amber-600">{{ service.pending() | amount }}</p>
+    </div>
+    <div class="card p-4">
+      <p class="stat-label">{{ i18n.t('kpi.overdue') }}</p>
+      <p class="stat-value text-rose-600">{{ service.overdueAmount() | amount }}</p>
+    </div>
+  </div>
+
+  @if (message()) {
+    <p class="flash">{{ message() }}</p>
+  }
+
+  <!-- Filtres -->
+  <div class="flex flex-wrap items-center gap-2">
+    @for (item of tabs; track item) {
+      <button type="button" class="chip" [class.chip-active]="tab() === item" (click)="tab.set(item)">
+        {{ tabLabel(item) }}
+        <span class="num opacity-60">{{ countFor(item) }}</span>
+      </button>
+    }
+    <input
+      class="field ml-auto max-w-xs"
+      type="search"
+      name="search"
+      [placeholder]="i18n.t('invoices.searchPlaceholder')"
+      [attr.aria-label]="i18n.t('invoices.searchLabel')"
+      [ngModel]="search()"
+      (ngModelChange)="search.set($event)"
+    />
+  </div>
+
+  <!-- Liste -->
+  <div class="card overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="w-full min-w-[64rem]">
+        <thead class="bg-slate-50/80">
+          <tr>
+            <th class="th-cell">{{ i18n.t('invoices.col.number') }}</th>
+            <th class="th-cell">{{ i18n.t('invoices.col.brand') }}</th>
+            <th class="th-cell">{{ i18n.t('invoices.col.issue') }}</th>
+            <th class="th-cell">{{ i18n.t('invoices.col.due') }}</th>
+            <th class="th-cell text-right">{{ i18n.t('invoices.col.total') }}</th>
+            <th class="th-cell text-right">{{ i18n.t('invoices.col.paid') }}</th>
+            <th class="th-cell text-right">{{ i18n.t('invoices.col.outstanding') }}</th>
+            <th class="th-cell">{{ i18n.t('quotes.col.status') }}</th>
+            <th class="th-cell text-right">{{ i18n.t('brands.col.actions') }}</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          @for (invoice of filtered(); track invoice.id) {
+            <tr class="hover:bg-slate-50/70">
+              <td class="td-cell">
+                <button
+                  type="button"
+                  class="font-semibold text-slate-900 hover:text-brand-600"
+                  (click)="open(invoice, 'preview')"
+                >
+                  {{ invoice.number || i18n.t('common.draft') }}
+                </button>
+                @if (invoice.campaignName) {
+                  <p class="text-xs text-slate-500">{{ invoice.campaignName }}</p>
+                }
+              </td>
+              <td class="td-cell">{{ invoice.brandName }}</td>
+              <td class="td-cell text-slate-500">{{ invoice.issueDate | localDate }}</td>
+              <td class="td-cell text-slate-500">{{ invoice.dueDate | localDate }}</td>
+              <td class="td-cell num text-right font-semibold text-slate-900">{{ invoice.totalInclVat | amount }}</td>
+              <td class="td-cell num text-right text-emerald-600">{{ invoice.paidAmount | amount }}</td>
+              <td
+                class="td-cell num text-right font-semibold"
+                [class]="invoice.outstanding > 0 ? 'text-slate-900' : 'text-slate-400'"
+              >
+                {{ invoice.outstanding | amount }}
+              </td>
+              <td class="td-cell">
+                <app-status-badge
+                  [status]="invoice.status"
+                  [extra]="invoice.daysOverdue ? invoice.daysOverdue + ' ' + i18n.t('common.days') : null"
+                />
+              </td>
+              <td class="td-cell">
+                <div class="flex items-center justify-end gap-0.5">
+                  <app-icon-button
+                    icon="view"
+                    [label]="i18n.t('preview.open')"
+                    (action)="open(invoice, 'preview')"
+                  />
+                  <app-icon-button
+                    icon="details"
+                    [label]="i18n.t('invoices.detail.payments')"
+                    (action)="open(invoice, 'detail')"
+                  />
+                  @if (invoice.editable) {
+                    <app-icon-button
+                      icon="edit"
+                      tone="brand"
+                      [label]="i18n.t('invoices.edit')"
+                      (action)="openEdit(invoice)"
+                    />
+                    <app-icon-button
+                      icon="send"
+                      tone="brand"
+                      [label]="i18n.t('invoices.validateAndSend')"
+                      (action)="send(invoice)"
+                    />
+                    <app-icon-button
+                      icon="delete"
+                      tone="danger"
+                      [label]="i18n.t('common.delete')"
+                      (action)="open(invoice, 'delete')"
+                    />
+                  }
+                  @if (invoice.status !== 'DRAFT' && invoice.status !== 'CANCELLED') {
+                    <app-icon-button
+                      icon="mail"
+                      tone="brand"
+                      [label]="i18n.t('email.send')"
+                      (action)="openEmail(invoice)"
+                    />
+                  }
+                  @if (invoice.outstanding > 0 && invoice.status !== 'DRAFT' && invoice.status !== 'CANCELLED') {
+                    <app-icon-button
+                      icon="payment"
+                      tone="success"
+                      [label]="i18n.t('invoices.payment')"
+                      (action)="openPayment(invoice)"
+                    />
+                  }
+                  @if (invoice.status === 'OVERDUE') {
+                    <app-icon-button
+                      icon="remind"
+                      tone="danger"
+                      link="/app/relances"
+                      [label]="i18n.t('dashboard.remind')"
+                    />
+                  }
+                  <app-icon-button
+                    icon="duplicate"
+                    [label]="i18n.t('common.duplicate')"
+                    (action)="duplicate(invoice)"
+                  />
+                  @if (invoice.status !== 'CANCELLED' && invoice.status !== 'DRAFT') {
+                    <app-icon-button
+                      icon="creditNote"
+                      [label]="i18n.t('invoices.credit')"
+                      (action)="open(invoice, 'credit')"
+                    />
+                  }
+                </div>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td class="td-cell text-slate-500" colspan="9">{{ i18n.t('invoices.empty') }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Création et modification -->
+@if (modal() === 'form') {
+  <app-modal
+    [title]="
+      editedId
+        ? i18n.t('invoices.editTitle', { number: current()?.number || i18n.t('common.draft') })
+        : i18n.t('invoices.new')
+    "
+    [subtitle]="editedId ? i18n.t('invoices.editSubtitle') : i18n.t('invoices.form.subtitle')"
+    [wide]="true"
+    (closed)="close()"
+  >
+    <form class="space-y-6" (ngSubmit)="save(false)">
+      <div class="grid gap-4 sm:grid-cols-2">
+        <div>
+          <label class="field-label" for="brand">{{ i18n.t('invoices.form.brand') }}</label>
+          <select id="brand" name="brand" class="field" [(ngModel)]="draft.brandId" (ngModelChange)="refreshDueDate()">
+            @for (brand of brands(); track brand.id) {
+              <option [value]="brand.id">{{ brand.name }}</option>
+            }
+          </select>
+        </div>
+        <div>
+          <label class="field-label" for="campaign">{{ i18n.t('invoices.form.campaign') }}</label>
+          <select id="campaign" name="campaign" class="field" [(ngModel)]="draft.campaignId">
+            <option [ngValue]="null">{{ i18n.t('common.none') }}</option>
+            @for (campaign of campaigns.list(); track campaign.id) {
+              <option [ngValue]="campaign.id">{{ campaign.name }}</option>
+            }
+          </select>
+        </div>
+      </div>
+
+      <div class="grid gap-4 sm:grid-cols-3">
+        <div>
+          <label class="field-label" for="issueDate">{{ i18n.t('invoices.form.issue') }}</label>
+          <input
+            id="issueDate"
+            name="issueDate"
+            type="date"
+            class="field"
+            [(ngModel)]="draft.issueDate"
+            (ngModelChange)="refreshDueDate()"
+          />
+        </div>
+        <div>
+          <label class="field-label" for="dueDate">{{ i18n.t('invoices.form.due') }}</label>
+          <input id="dueDate" name="dueDate" type="date" class="field" [(ngModel)]="draft.dueDate" />
+        </div>
+        <div>
+          <label class="field-label" for="deposit">{{ i18n.t('invoices.form.deposit') }}</label>
+          <input id="deposit" name="deposit" type="number" min="0" max="100" class="field" [(ngModel)]="draft.depositPercent" />
+        </div>
+      </div>
+
+      <app-line-editor
+        [lines]="draft.lines"
+        [globalDiscount]="draft.globalDiscount"
+        [taxation]="draft"
+        (add)="addLine()"
+        (remove)="removeLine($event)"
+        (addTax)="addTax()"
+        (removeTax)="removeTax($event)"
+      />
+
+      <div>
+        <label class="field-label" for="terms">{{ i18n.t('invoices.form.terms') }}</label>
+        <textarea id="terms" name="terms" rows="2" class="field" [(ngModel)]="draft.terms"></textarea>
+      </div>
+
+      @if (error()) {
+        <p class="alert-error" role="alert">{{ error() }}</p>
+      }
+
+      <div class="flex flex-wrap justify-end gap-3">
+        <button type="button" class="btn-secondary" (click)="save(true)">
+          {{ i18n.t('invoices.form.saveDraft') }}
+        </button>
+        <button type="submit" class="btn-primary">{{ i18n.t('invoices.form.submit') }}</button>
+      </div>
+    </form>
+  </app-modal>
+}
+
+<!-- Aperçu imprimable -->
+@if (modal() === 'preview' && current(); as invoice) {
+  <app-modal
+    [title]="i18n.t('preview.title')"
+    [subtitle]="invoice.number || i18n.t('common.draft')"
+    [wide]="true"
+    (closed)="close()"
+  >
+    <app-invoice-preview [invoice]="invoice" />
+
+    <div class="no-print mt-5 flex flex-wrap justify-end gap-3 border-t border-slate-100 pt-4">
+      @if (invoice.editable) {
+        <button type="button" class="btn-secondary" (click)="openEdit(invoice)">
+          {{ i18n.t('invoices.edit') }}
+        </button>
+      }
+      @if (invoice.status !== 'DRAFT' && invoice.status !== 'CANCELLED') {
+        <button type="button" class="btn-secondary" (click)="openEmail(invoice)">
+          {{ i18n.t('email.send') }}
+        </button>
+      }
+    </div>
+  </app-modal>
+}
+
+<!-- Détail : paiements, relances, envois -->
+@if ((modal() === 'detail' || modal() === 'credit') && current(); as invoice) {
+  <app-modal
+    [title]="
+      modal() === 'credit'
+        ? i18n.t('invoices.credit.title')
+        : invoice.number || i18n.t('invoices.detail.title')
+    "
+    [subtitle]="
+      modal() === 'credit'
+        ? invoice.number + ' · ' + invoice.brandName
+        : i18n.t('invoices.detail.subtitle', { brand: invoice.brandName, due: invoice.dueDate })
+    "
+    [wide]="true"
+    (closed)="close()"
+  >
+    <div class="space-y-6">
+      <div class="flex flex-wrap items-center gap-3">
+        <app-status-badge
+          [status]="invoice.status"
+          [extra]="invoice.daysOverdue ? invoice.daysOverdue + ' ' + i18n.t('common.days') : null"
+        />
+        @if (invoice.deposit > 0) {
+          <span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs text-slate-600">
+            {{ i18n.t('invoices.detail.deposit', { amount: (invoice.deposit | amount) }) }}
+          </span>
+        }
+      </div>
+
+      <dl class="space-y-1 rounded-xl bg-slate-50 p-4 text-sm">
+        @if (invoice.globalDiscountAmount > 0) {
+          <div class="flex justify-between">
+            <dt>{{ i18n.t('totals.subtotal') }}</dt>
+            <dd class="num">{{ invoice.subtotal | amount }}</dd>
+          </div>
+          <div class="flex justify-between text-brand-700">
+            <dt>{{ i18n.t('totals.globalDiscount') }}</dt>
+            <dd class="num">− {{ invoice.globalDiscountAmount | amount }}</dd>
+          </div>
+        }
+        <div class="flex justify-between">
+          <dt>{{ i18n.t('invoices.detail.totalHt') }}</dt>
+          <dd class="num">{{ invoice.totalExclVat | amount }}</dd>
+        </div>
+        @if (invoice.vatApplicable) {
+          <div class="flex justify-between">
+            <dt>{{ i18n.t('invoices.detail.totalVat') }}</dt>
+            <dd class="num">{{ invoice.totalVat | amount }}</dd>
+          </div>
+        } @else {
+          <div class="flex justify-between text-slate-500">
+            <dt>{{ i18n.t('tax.vatNotApplicable') }}</dt>
+            <dd>—</dd>
+          </div>
+        }
+        @for (tax of invoice.taxBreakdown; track tax.label + tax.rate) {
+          <div class="flex justify-between">
+            <dt>{{ tax.label }} ({{ tax.rate }} %)</dt>
+            <dd class="num">{{ tax.amount | amount }}</dd>
+          </div>
+        }
+        <div class="flex justify-between font-semibold text-slate-900">
+          <dt>{{ i18n.t('invoices.detail.totalTtc') }}</dt>
+          <dd class="num">{{ invoice.totalInclVat | amount }}</dd>
+        </div>
+        <div class="flex justify-between text-emerald-600">
+          <dt>{{ i18n.t('invoices.detail.paid') }}</dt>
+          <dd class="num">{{ invoice.paidAmount | amount }}</dd>
+        </div>
+        <div class="flex justify-between font-semibold">
+          <dt>{{ i18n.t('invoices.detail.outstanding') }}</dt>
+          <dd class="num">{{ invoice.outstanding | amount }}</dd>
+        </div>
+      </dl>
+
+      <section>
+        <h3 class="text-sm font-semibold text-slate-900">{{ i18n.t('invoices.detail.payments') }}</h3>
+        <ul class="mt-2 divide-y divide-slate-100 text-sm">
+          @for (payment of paymentsOf(invoice.id); track payment.id) {
+            <li class="flex justify-between py-2">
+              <span class="text-slate-600">
+                {{ payment.date | localDate }} · {{ i18n.method(payment.method) }}
+              </span>
+              <span class="num font-medium text-slate-900">{{ payment.amount | amount }}</span>
+            </li>
+          } @empty {
+            <li class="py-2 text-slate-500">{{ i18n.t('invoices.detail.noPayment') }}</li>
+          }
+        </ul>
+      </section>
+
+      <section>
+        <h3 class="text-sm font-semibold text-slate-900">{{ i18n.t('invoices.detail.reminders') }}</h3>
+        <ul class="mt-2 divide-y divide-slate-100 text-sm">
+          @for (reminder of remindersOf(invoice.id); track reminder.id) {
+            <li class="flex justify-between gap-3 py-2">
+              <span class="text-slate-600">{{ i18n.t(reminder.stepLabelKey) }}</span>
+              <app-status-badge [status]="reminder.status" />
+            </li>
+          } @empty {
+            <li class="py-2 text-slate-500">{{ i18n.t('invoices.detail.noReminder') }}</li>
+          }
+        </ul>
+      </section>
+
+      <section>
+        <h3 class="text-sm font-semibold text-slate-900">{{ i18n.t('email.history') }}</h3>
+        <ul class="mt-2 divide-y divide-slate-100 text-sm">
+          @for (email of emailsOf(invoice.id); track email.id) {
+            <li class="flex justify-between gap-3 py-2">
+              <span class="truncate text-slate-600">{{ email.to }}</span>
+              <span class="shrink-0 text-xs text-slate-400">{{ email.sentAt | localDate }}</span>
+            </li>
+          } @empty {
+            <li class="py-2 text-slate-500">{{ i18n.t('email.noHistory') }}</li>
+          }
+        </ul>
+      </section>
+
+      <p class="text-xs text-slate-500">{{ invoice.terms }}</p>
+
+      <!-- Confirmation de l'avoir -->
+      @if (modal() === 'credit') {
+        <div class="alert-warning">
+          {{
+            i18n.t('invoices.credit.warning', {
+              amount: (-invoice.totalInclVat | amount),
+              number: invoice.number,
+            })
+          }}
+        </div>
+
+        <div class="flex flex-wrap justify-end gap-3 border-t border-slate-100 pt-4">
+          <button type="button" class="btn-secondary" (click)="close()">{{ i18n.t('common.cancel') }}</button>
+          <button type="button" class="btn-primary" (click)="confirmCredit()">
+            {{ i18n.t('invoices.credit.confirm') }}
+          </button>
+        </div>
+      }
+    </div>
+  </app-modal>
+}
+
+<!-- Suppression d'un brouillon -->
+@if (modal() === 'delete' && current(); as invoice) {
+  <app-modal
+    [title]="i18n.t('invoices.deleteTitle')"
+    [subtitle]="invoice.brandName"
+    (closed)="close()"
+  >
+    <div class="space-y-5">
+      <p class="alert-warning">{{ i18n.t('invoices.deleteWarning') }}</p>
+
+      <div class="flex justify-end gap-3">
+        <button type="button" class="btn-secondary" (click)="close()">{{ i18n.t('common.cancel') }}</button>
+        <button type="button" class="btn-danger" (click)="confirmDelete()">
+          {{ i18n.t('common.confirmDelete') }}
+        </button>
+      </div>
+    </div>
+  </app-modal>
+}
+
+<!-- Envoi par email -->
+@if (modal() === 'email' && current(); as invoice) {
+  <app-modal
+    [title]="i18n.t('email.title')"
+    [subtitle]="i18n.t('email.attachment', { number: invoice.number || i18n.t('common.draft') })"
+    [wide]="true"
+    (closed)="close()"
+  >
+    <form class="space-y-5" (ngSubmit)="sendEmail()">
+      <div>
+        <label class="field-label" for="emailTo">{{ i18n.t('email.to') }}</label>
+        <input id="emailTo" name="emailTo" type="email" class="field" [(ngModel)]="emailDraft.to" />
+      </div>
+
+      <div>
+        <label class="field-label" for="emailSubject">{{ i18n.t('email.subject') }}</label>
+        <input id="emailSubject" name="emailSubject" class="field" [(ngModel)]="emailDraft.subject" />
+      </div>
+
+      <label class="flex items-center gap-3 text-sm text-slate-600">
+        <input
+          type="checkbox"
+          name="withOutstanding"
+          class="size-4 rounded accent-brand-600"
+          [(ngModel)]="emailDraft.withOutstanding"
+          (ngModelChange)="refreshEmailBody()"
+        />
+        {{ i18n.t('email.withOutstanding') }}
+      </label>
+
+      <div>
+        <label class="field-label" for="emailBody">{{ i18n.t('email.body') }}</label>
+        <textarea id="emailBody" name="emailBody" rows="10" class="field font-mono text-xs" [(ngModel)]="emailDraft.body"></textarea>
+      </div>
+
+      @if (error()) {
+        <p class="alert-error" role="alert">{{ error() }}</p>
+      }
+
+      <div class="flex justify-end gap-3">
+        <button type="button" class="btn-secondary" (click)="close()">{{ i18n.t('common.cancel') }}</button>
+        <button type="submit" class="btn-primary">{{ i18n.t('email.send') }}</button>
+      </div>
+    </form>
+  </app-modal>
+}
+
+<!-- Paiement -->
+@if (modal() === 'payment' && current(); as invoice) {
+  <app-modal
+    [title]="i18n.t('invoices.payment.title')"
+    [subtitle]="
+      i18n.t('invoices.payment.subtitle', {
+        number: invoice.number,
+        amount: (invoice.outstanding | amount),
+      })
+    "
+    (closed)="close()"
+  >
+    <form class="space-y-5" (ngSubmit)="recordPayment()">
+      <div class="grid gap-4 sm:grid-cols-2">
+        <div>
+          <label class="field-label" for="amount">{{ i18n.t('invoices.payment.amount') }}</label>
+          <input id="amount" name="amount" type="number" min="0" step="0.01" class="field" [(ngModel)]="paymentDraft.amount" />
+        </div>
+        <div>
+          <label class="field-label" for="paymentDate">{{ i18n.t('invoices.payment.date') }}</label>
+          <input id="paymentDate" name="paymentDate" type="date" class="field" [(ngModel)]="paymentDraft.date" />
+        </div>
+      </div>
+
+      <div class="grid gap-4 sm:grid-cols-2">
+        <div>
+          <label class="field-label" for="method">{{ i18n.t('invoices.payment.method') }}</label>
+          <select id="method" name="method" class="field" [(ngModel)]="paymentDraft.method">
+            @for (method of methods; track method) {
+              <option [value]="method">{{ i18n.method(method) }}</option>
+            }
+          </select>
+        </div>
+        <div>
+          <label class="field-label" for="reference">{{ i18n.t('invoices.payment.reference') }}</label>
+          <input id="reference" name="reference" class="field" placeholder="VIR-88213" [(ngModel)]="paymentDraft.reference" />
+        </div>
+      </div>
+
+      <div>
+        <label class="field-label" for="note">{{ i18n.t('invoices.payment.note') }}</label>
+        <input
+          id="note"
+          name="note"
+          class="field"
+          [placeholder]="i18n.t('invoices.payment.notePlaceholder')"
+          [(ngModel)]="paymentDraft.note"
+        />
+      </div>
+
+      @if (error()) {
+        <p class="alert-error" role="alert">{{ error() }}</p>
+      }
+
+      <div class="flex justify-end gap-3">
+        <button type="button" class="btn-secondary" (click)="close()">{{ i18n.t('common.cancel') }}</button>
+        <button type="submit" class="btn-primary">{{ i18n.t('common.save') }}</button>
+      </div>
+    </form>
+  </app-modal>
+}

@@ -7,13 +7,13 @@ export const authGuard: CanActivateFn = () => {
   const auth = inject(AuthService);
   const router = inject(Router);
 
-  return auth.estConnecte() ? true : router.createUrlTree(['/createurs/connexion']);
+  return auth.isSignedIn() ? true : router.createUrlTree(['/createurs/connexion']);
 };
 
 /** Évite d'afficher les tunnels d'accès à un créateur déjà connecté. */
-export const visiteurGuard: CanActivateFn = () => {
+export const guestGuard: CanActivateFn = () => {
   const auth = inject(AuthService);
   const router = inject(Router);
 
-  return auth.estConnecte() ? router.createUrlTree(['/app/tableau-de-bord']) : true;
+  return auth.isSignedIn() ? router.createUrlTree(['/app/tableau-de-bord']) : true;
 };
