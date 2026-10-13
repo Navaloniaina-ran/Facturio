@@ -1,46 +1,49 @@
 <div class="space-y-5">
-  <div class="flex flex-wrap items-end justify-between gap-4">
-    <div>
-      <h1 class="text-xl font-semibold text-slate-900">{{ i18n.t('nav.reports') }}</h1>
-      <p class="mt-1 text-sm text-slate-500">{{ i18n.t('reports.subtitle') }}</p>
-    </div>
-    <button type="button" class="btn-secondary" (click)="exportCsv()">{{ i18n.t('common.export') }}</button>
-  </div>
+  <app-page-header
+    icon="reports"
+    tone="sky"
+    [title]="i18n.t('nav.reports')"
+    [subtitle]="i18n.t('reports.subtitle')"
+  >
+    <button type="button" class="btn-secondary" (click)="exportCsv()">
+      {{ i18n.t('common.export') }}
+    </button>
+  </app-page-header>
 
   @if (message()) {
-    <p class="rounded-xl bg-brand-50 px-4 py-3 text-sm text-brand-800 ring-1 ring-brand-200">{{ message() }}</p>
+    <p class="flash">
+      {{ message() }}
+    </p>
   }
 
   <!-- Indicateurs -->
   <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
     <div class="card p-4">
-      <p class="text-xs text-slate-500">{{ i18n.t('kpi.revenue') }}</p>
-      <p class="num mt-1 text-lg font-semibold text-slate-900">{{ service.revenue() | amount }}</p>
+      <p class="stat-label">{{ i18n.t('kpi.revenue') }}</p>
+      <p class="stat-value">{{ service.revenue() | amount }}</p>
     </div>
     <div class="card p-4">
-      <p class="text-xs text-slate-500">{{ i18n.t('kpi.collected') }}</p>
-      <p class="num mt-1 text-lg font-semibold text-emerald-600">{{ service.collected() | amount }}</p>
+      <p class="stat-label">{{ i18n.t('kpi.collected') }}</p>
+      <p class="stat-value text-emerald-600">{{ service.collected() | amount }}</p>
     </div>
     <div class="card p-4">
-      <p class="text-xs text-slate-500">{{ i18n.t('reports.kpi.unpaidRate') }}</p>
-      <p class="num mt-1 text-lg font-semibold text-rose-600">{{ service.unpaidRate() }} %</p>
+      <p class="stat-label">{{ i18n.t('reports.kpi.unpaidRate') }}</p>
+      <p class="stat-value text-rose-600">{{ service.unpaidRate() }} %</p>
     </div>
     <div class="card p-4">
-      <p class="text-xs text-slate-500">{{ i18n.t('reports.kpi.avgDelay') }}</p>
-      <p class="num mt-1 text-lg font-semibold text-slate-900">
-        {{ service.averageDelay() }} {{ i18n.t('common.days') }}
-      </p>
+      <p class="stat-label">{{ i18n.t('reports.kpi.avgDelay') }}</p>
+      <p class="stat-value">{{ service.averageDelay() }} {{ i18n.t('common.days') }}</p>
     </div>
     <div class="card p-4">
-      <p class="text-xs text-slate-500">{{ i18n.t('reports.kpi.acceptance') }}</p>
-      <p class="num mt-1 text-lg font-semibold text-brand-600">{{ service.acceptanceRate() }} %</p>
+      <p class="stat-label">{{ i18n.t('reports.kpi.acceptance') }}</p>
+      <p class="stat-value text-brand-600">{{ service.acceptanceRate() }} %</p>
     </div>
   </div>
 
   <!-- Revenus par année -->
   <section class="card p-5">
-    <div class="flex flex-wrap items-baseline justify-between gap-3">
-      <h2 class="text-sm font-semibold text-slate-900">{{ i18n.t('reports.byYear') }}</h2>
+    <div class="card-head">
+      <h2 class="card-title">{{ i18n.t('reports.byYear') }}</h2>
       <div class="flex flex-wrap gap-2">
         @for (year of service.years(); track year) {
           <button
@@ -75,11 +78,14 @@
 
   <!-- Revenus par mois de l'année choisie -->
   <section class="card p-5">
-    <div class="flex flex-wrap items-baseline justify-between gap-3">
-      <h2 class="text-sm font-semibold text-slate-900">
+    <div class="card-head">
+      <h2 class="card-title">
         {{ i18n.t('reports.byMonth', { year: service.selectedYear() }) }}
       </h2>
-      <p class="text-xs font-semibold" [class]="service.yearTrend() >= 0 ? 'text-emerald-600' : 'text-rose-600'">
+      <p
+        class="text-xs font-semibold"
+        [class]="service.yearTrend() >= 0 ? 'text-emerald-600' : 'text-rose-600'"
+      >
         {{
           i18n.t('reports.comparison', {
             year: service.selectedYear(),
@@ -123,7 +129,7 @@
 
   <!-- Fiabilité des marques -->
   <section class="card p-5">
-    <h2 class="text-sm font-semibold text-slate-900">{{ i18n.t('reports.reliability') }}</h2>
+    <h2 class="card-title">{{ i18n.t('reports.reliability') }}</h2>
     <p class="mt-1 text-xs text-slate-500">{{ i18n.t('reports.reliabilityHint') }}</p>
 
     <ul class="mt-4 space-y-4">
@@ -131,7 +137,9 @@
         <li>
           <div class="flex items-baseline justify-between gap-3">
             <span class="truncate text-sm font-medium text-slate-800">{{ brand.name }}</span>
-            <span class="num text-sm font-semibold text-slate-900">{{ brand.reliability }} / 100</span>
+            <span class="num text-sm font-semibold text-slate-900"
+              >{{ brand.reliability }} / 100</span
+            >
           </div>
           <p class="text-xs text-slate-500">
             {{ i18n.t(brand.reliabilityKey) }} ·
@@ -140,7 +148,13 @@
           </p>
           <div class="meter mt-1.5">
             <span
-              [class]="brand.reliability >= 65 ? 'bg-emerald-500' : brand.reliability >= 40 ? 'bg-amber-500' : 'bg-rose-500'"
+              [class]="
+                brand.reliability >= 65
+                  ? 'bg-emerald-500'
+                  : brand.reliability >= 40
+                    ? 'bg-amber-500'
+                    : 'bg-rose-500'
+              "
               [style.width.%]="brand.reliability"
             ></span>
           </div>
@@ -154,7 +168,7 @@
   <div class="grid gap-6 lg:grid-cols-2">
     <!-- Top marques -->
     <section class="card p-5">
-      <h2 class="text-sm font-semibold text-slate-900">{{ i18n.t('reports.topBrands') }}</h2>
+      <h2 class="card-title">{{ i18n.t('reports.topBrands') }}</h2>
       <ul class="mt-4 space-y-3">
         @for (brand of service.topBrands(); track brand.label) {
           <li>
@@ -174,7 +188,7 @@
 
     <!-- Revenus par type de livrable -->
     <section class="card p-5">
-      <h2 class="text-sm font-semibold text-slate-900">{{ i18n.t('reports.byDeliverable') }}</h2>
+      <h2 class="card-title">{{ i18n.t('reports.byDeliverable') }}</h2>
       <ul class="mt-4 space-y-3">
         @for (row of service.byDeliverable(); track row.label) {
           <li>
@@ -197,7 +211,7 @@
   <section class="card overflow-hidden">
     <h2 class="px-5 py-4 text-sm font-semibold text-slate-900">{{ i18n.t('reports.aging') }}</h2>
 
-    <div class="overflow-x-auto">
+    <div class="table-wrap">
       <table class="w-full min-w-[32rem]">
         <thead class="bg-slate-50/80">
           <tr>
@@ -225,7 +239,7 @@
   </section>
 
   @if (!service.advancedReports()) {
-    <p class="rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-800 ring-1 ring-amber-200">
+    <p class="alert-warning">
       {{ i18n.t('reports.planNotice') }}
     </p>
   }

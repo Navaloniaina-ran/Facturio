@@ -2,11 +2,12 @@ import { Component, inject, signal } from '@angular/core';
 import { I18nService } from '../../core/i18n/i18n.service';
 import { AmountPipe } from '../../shared/amount.pipe';
 import { ReportService } from './report.service';
+import { PageHeaderComponent } from '../../shared/page-header/page-header.component';
 
 /** Analyse de l'activité (P11) : ce qui rentre, ce qui traîne, ce qui rapporte. */
 @Component({
   selector: 'app-reports',
-  imports: [AmountPipe],
+  imports: [PageHeaderComponent, AmountPipe],
   templateUrl: './reports.component.html',
 })
 export class ReportsComponent {

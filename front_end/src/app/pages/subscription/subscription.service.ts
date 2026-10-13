@@ -1,6 +1,16 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import { Injectable, computed, inject } from '@angular/core';
+import { Observable, catchError, map, of, tap } from 'rxjs';
+import { apiErrorResult } from '../../core/api/api-error';
+import { CreatorApiService } from '../../core/api/creator-api.service';
 import { addMonths, round, today } from '../../core/calculations';
-import { ActionResult, BillingCycle, PlanCode, PlatformInvoice } from '../../core/models';
+import {
+  ActionResult,
+  BillingCycle,
+  PlanCode,
+  PlatformInvoice,
+  Subscription,
+} from '../../core/models';
 import { PLAN_ORDER, QUOTAS } from '../../core/quotas';
 import { WorkspaceStore } from '../../core/workspace-store.service';
 import { InvoiceService } from '../invoices/invoice.service';
@@ -37,11 +47,15 @@ const PRICES: Record<PlanCode, number> = { FREE: 0, PRO: 19, STUDIO: 59 };
 @Injectable({ providedIn: 'root' })
 export class SubscriptionService {
   private readonly store = inject(WorkspaceStore);
+  private readonly api = inject(CreatorApiService);
   private readonly invoices = inject(InvoiceService);
 
   readonly current = this.store.subscription.asReadonly();
   readonly platformInvoices = computed(() =>
-    this.store.platformInvoices().slice().sort((a, b) => b.date.localeCompare(a.date)),
+    this.store
+      .platformInvoices()
+      .slice()
+      .sort((a, b) => b.date.localeCompare(a.date)),
   );
 
   readonly offers = computed<PlanOffer[]>(() =>
@@ -53,7 +67,11 @@ export class SubscriptionService {
         annualPrice: round(PRICES[code] * 10),
         taglineKey: `subscription.tagline.${code}`,
         features: [
-          { key: 'subscription.feature.brands', value: this.readable(quota.brands), included: true },
+          {
+            key: 'subscription.feature.brands',
+            value: this.readable(quota.brands),
+            included: true,
+          },
           {
             key: 'subscription.feature.invoices',
             value: this.readable(quota.invoicesPerMonth),
@@ -92,7 +110,11 @@ export class SubscriptionService {
   readonly usage = computed<UsageRow[]>(() => {
     const quota = QUOTAS[this.current().plan];
     const rows: { labelKey: string; used: number; limit: number | null }[] = [
-      { labelKey: 'subscription.usage.brands', used: this.store.brands().length, limit: quota.brands },
+      {
+        labelKey: 'subscription.usage.brands',
+        used: this.store.brands().length,
+        limit: quota.brands,
+      },
       {
         labelKey: 'subscription.usage.invoices',
         used: this.invoices.issuedThisMonth(),
@@ -111,10 +133,14 @@ export class SubscriptionService {
     }));
   });
 
-  changePlan(plan: PlanCode): ActionResult {
+  changePlan(plan: PlanCode): Observable<ActionResult> {
     const subscription = this.current();
     if (subscription.plan === plan) {
-      return { ok: true };
+      return of({ ok: true });
+    }
+
+    if (this.store.remote()) {
+      return this.push(plan, subscription.cycle);
     }
 
     this.store.subscription.set({
@@ -142,33 +168,73 @@ export class SubscriptionService {
     }
 
     this.store.log('SUBSCRIPTION', 'subscription.flash.changed', { plan });
-    return { ok: true };
+    return of({ ok: true });
   }
 
-  setCycle(cycle: BillingCycle): void {
+  setCycle(cycle: BillingCycle): Observable<ActionResult> {
+    if (this.store.remote()) {
+      return this.push(this.current().plan, cycle);
+    }
+
     this.store.subscription.update((subscription) => ({
       ...subscription,
       cycle,
       nextBillingDate: addMonths(today(), cycle === 'ANNUAL' ? 12 : 1),
     }));
+    return of({ ok: true });
   }
 
   /** L'accès reste ouvert jusqu'à l'échéance en cours. */
-  cancel(): void {
+  cancel(): Observable<ActionResult> {
+    if (this.store.remote()) {
+      return this.api.cancelSubscription().pipe(
+        tap((subscription) => this.apply(subscription)),
+        map(() => ({ ok: true }) as ActionResult),
+        catchError((error: HttpErrorResponse) => of(apiErrorResult(error))),
+      );
+    }
+
     this.store.subscription.update((subscription) => ({
       ...subscription,
       cancelAtPeriodEnd: true,
     }));
     this.store.log('SUBSCRIPTION', 'subscription.flash.cancelled');
+    return of({ ok: true });
   }
 
-  resume(): void {
-    this.store.subscription.update((subscription) => ({
-      ...subscription,
+  resume(): Observable<ActionResult> {
+    const subscription = this.current();
+    if (this.store.remote()) {
+      // Reprendre, c'est réengager l'offre en cours : le serveur remet le
+      // renouvellement en place et efface la demande de résiliation.
+      return this.push(subscription.plan, subscription.cycle);
+    }
+
+    this.store.subscription.update((current) => ({
+      ...current,
       cancelAtPeriodEnd: false,
       status: 'ACTIVE',
     }));
     this.store.log('SUBSCRIPTION', 'subscription.flash.resumed');
+    return of({ ok: true });
+  }
+
+  /** Envoie l'offre choisie au serveur, seul maître de la facturation SaaS. */
+  private push(plan: PlanCode, cycle: BillingCycle): Observable<ActionResult> {
+    return this.api.changePlan(plan, cycle).pipe(
+      tap((subscription) => this.apply(subscription)),
+      map(() => ({ ok: true }) as ActionResult),
+      catchError((error: HttpErrorResponse) => of(apiErrorResult(error))),
+    );
+  }
+
+  private apply(subscription: Subscription): void {
+    this.store.subscription.set(subscription);
+    this.store.creator.update((creator) => ({ ...creator, plan: subscription.plan }));
+    this.api.platformInvoices().subscribe({
+      next: (invoices) => this.store.platformInvoices.set(invoices),
+      error: () => undefined,
+    });
   }
 
   private readable(limit: number | null): string | number {

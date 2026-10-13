@@ -99,7 +99,11 @@ export class ReportService {
     ];
 
     for (const invoice of this.invoices.list()) {
-      if (invoice.outstanding <= 0 || invoice.status === 'DRAFT' || invoice.status === 'CANCELLED') {
+      if (
+        invoice.outstanding <= 0 ||
+        invoice.status === 'DRAFT' ||
+        invoice.status === 'CANCELLED'
+      ) {
         continue;
       }
       const late = invoice.daysOverdue;
@@ -129,7 +133,10 @@ export class ReportService {
     }
 
     const maximum = Math.max(...points.map((p) => p.amount), 1);
-    return points.map((p) => ({ ...p, share: Math.max(2, Math.round((p.amount / maximum) * 100)) }));
+    return points.map((p) => ({
+      ...p,
+      share: Math.max(2, Math.round((p.amount / maximum) * 100)),
+    }));
   });
 
   // ----- Statistiques par année et par mois -----

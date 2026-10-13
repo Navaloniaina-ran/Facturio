@@ -20,25 +20,35 @@ export class SubscriptionComponent {
   protected readonly message = signal<string | null>(null);
 
   protected choose(plan: PlanCode): void {
-    const result = this.service.changePlan(plan);
-    this.message.set(
-      result.ok ? this.i18n.t('subscription.flash.changed', { plan }) : this.i18n.error(result),
-    );
+    this.service.changePlan(plan).subscribe((result) => {
+      this.message.set(
+        result.ok ? this.i18n.t('subscription.flash.changed', { plan }) : this.i18n.error(result),
+      );
+    });
   }
 
   protected setCycle(cycle: BillingCycle): void {
-    this.service.setCycle(cycle);
-    this.message.set(this.i18n.t('subscription.flash.cycle'));
+    this.service.setCycle(cycle).subscribe((result) => {
+      this.message.set(
+        result.ok ? this.i18n.t('subscription.flash.cycle') : this.i18n.error(result),
+      );
+    });
   }
 
   protected cancel(): void {
-    this.service.cancel();
-    this.message.set(this.i18n.t('subscription.flash.cancelled'));
+    this.service.cancel().subscribe((result) => {
+      this.message.set(
+        result.ok ? this.i18n.t('subscription.flash.cancelled') : this.i18n.error(result),
+      );
+    });
   }
 
   protected resume(): void {
-    this.service.resume();
-    this.message.set(this.i18n.t('subscription.flash.resumed'));
+    this.service.resume().subscribe((result) => {
+      this.message.set(
+        result.ok ? this.i18n.t('subscription.flash.resumed') : this.i18n.error(result),
+      );
+    });
   }
 
   protected priceOf(plan: { monthlyPrice: number; annualPrice: number }): number {
