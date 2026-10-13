@@ -1,0 +1,229 @@
+<div class="space-y-5">
+  <!-- En-tête : l'entreprise active est rappelée en permanence, c'est elle
+       qui détermine tout ce que la page donne à voir. -->
+  <div class="page-head">
+    <div class="min-w-0">
+      <h1 class="page-title">{{ i18n.t('pme.customers.title') }}</h1>
+      <p class="page-subtitle">
+        {{
+          i18n.t('pme.customers.subtitle', {
+            count: store.customers().length,
+            company: companyName(),
+          })
+        }}
+      </p>
+    </div>
+    <div class="flex items-center gap-3">
+      <app-company-switch />
+      <button type="button" class="btn-primary" (click)="openCreate()">
+        {{ i18n.t('pme.customers.new') }}
+      </button>
+    </div>
+  </div>
+
+  @if (message()) {
+    <p class="rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-800 ring-1 ring-emerald-200">
+      {{ message() }}
+    </p>
+  }
+
+  @if (store.activeCompany(); as company) {
+    @if (company.vatRegime === 'FRANCHISE_BASE') {
+      <p class="alert-warning">
+        {{ i18n.t('pme.notice.franchise') }}
+      </p>
+    }
+    @if (company.vatOnDebits) {
+      <p class="rounded-xl bg-sky-50 px-4 py-3 text-sm text-sky-900 ring-1 ring-sky-200">
+        {{ i18n.t('pme.notice.vatOnDebits') }}
+      </p>
+    }
+  }
+
+  <input
+    class="field max-w-xs"
+    type="search"
+    name="search"
+    [placeholder]="i18n.t('pme.customers.searchPlaceholder')"
+    [attr.aria-label]="i18n.t('pme.customers.searchPlaceholder')"
+    [ngModel]="search()"
+    (ngModelChange)="search.set($event)"
+  />
+
+  <div class="card overflow-hidden">
+    <div class="table-wrap">
+      <table class="w-full min-w-[60rem]">
+        <thead class="bg-slate-50/80">
+          <tr>
+            <th class="th-cell">{{ i18n.t('pme.party.name') }}</th>
+            <th class="th-cell">{{ i18n.t('pme.party.kind') }}</th>
+            <th class="th-cell">{{ i18n.t('pme.party.contact') }}</th>
+            <th class="th-cell">{{ i18n.t('pme.party.city') }}</th>
+            <th class="th-cell">{{ i18n.t('pme.party.siren') }}</th>
+            <th class="th-cell">{{ i18n.t('pme.party.vatNumber') }}</th>
+            <th class="th-cell text-right">{{ i18n.t('pme.party.terms') }}</th>
+            <th class="th-cell text-right">{{ i18n.t('pme.party.actions') }}</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          @for (customer of filtered(); track customer.id) {
+            <tr>
+              <td class="td-cell">
+                <span class="font-medium text-slate-900">{{ customer.name }}</span>
+                <!-- Mention obligatoire sur la facture lorsque la livraison
+                     ne se fait pas à l'adresse de facturation. -->
+                @if (hasSeparateDelivery(customer)) {
+                  <span class="mt-0.5 block text-[0.7rem] text-slate-500">
+                    {{ i18n.t('pme.party.deliveryDiffers') }}
+                  </span>
+                }
+              </td>
+              <td class="td-cell">
+                {{
+                  customer.kind === 'COMPANY'
+                    ? i18n.t('pme.party.company')
+                    : i18n.t('pme.party.individual')
+                }}
+              </td>
+              <td class="td-cell">{{ customer.contact }}</td>
+              <td class="td-cell">{{ customer.address.city }}</td>
+              <td class="td-cell font-mono text-[0.75rem]">
+                {{ customer.identity.siren || i18n.t('pme.party.noSiren') }}
+              </td>
+              <td class="td-cell font-mono text-[0.75rem]">
+                {{ customer.identity.vatNumber || i18n.t('pme.party.noSiren') }}
+              </td>
+              <td class="td-cell text-right">{{ terms(customer.paymentTermsDays) }}</td>
+              <td class="td-cell text-right">
+                <div class="flex justify-end gap-2">
+                  <button type="button" class="btn-ghost" (click)="openEdit(customer)">
+                    {{ i18n.t('common.edit') }}
+                  </button>
+                  <button type="button" class="btn-ghost text-rose-600" (click)="remove(customer)">
+                    {{ i18n.t('common.delete') }}
+                  </button>
+                </div>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td class="td-cell text-slate-500" colspan="8">
+                {{ i18n.t('pme.customers.empty') }}
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+@if (formOpen()) {
+  <app-modal
+    [title]="formTitle()"
+    [subtitle]="i18n.t('pme.form.subtitleFor', { company: companyName() })"
+    [wide]="true"
+    (closed)="formOpen.set(false)"
+  >
+    <form novalidate #partyForm="ngForm" (ngSubmit)="partyForm.valid && submit()">
+      @if (partyForm.submitted && partyForm.invalid) {
+        <p class="alert-error mb-4" role="alert">{{ i18n.t('form.incomplete') }}</p>
+      }
+
+      @if (error()) {
+        <p class="alert-error mb-4" role="alert">{{ error() }}</p>
+      }
+
+      <app-pme-party-fields [draft]="draft" />
+
+      <div class="mt-5 space-y-4 border-t border-slate-100 pt-5">
+        <div>
+          <label class="field-label" for="creditLimit">{{ i18n.t('pme.form.creditLimit') }}</label>
+          <input
+            id="creditLimit"
+            name="creditLimit"
+            type="number"
+            min="0"
+            class="field"
+            [(ngModel)]="draft.creditLimit"
+          />
+          <p class="field-hint">{{ i18n.t('pme.form.creditLimitHint') }}</p>
+        </div>
+
+        <!-- Adresse de livraison : mention obligatoire dès qu'elle diffère. -->
+        <label class="flex items-center gap-2 text-sm text-slate-700">
+          <input
+            type="checkbox"
+            name="separateDelivery"
+            class="size-4"
+            [ngModel]="!separateDelivery"
+            (ngModelChange)="toggleSeparateDelivery(!$event)"
+          />
+          {{ i18n.t('pme.form.deliverySame') }}
+        </label>
+
+        @if (separateDelivery && draft.deliveryAddress; as delivery) {
+          <fieldset class="grid gap-4 rounded-xl bg-slate-50 p-4 sm:grid-cols-6">
+            <legend class="field-label mb-1">{{ i18n.t('pme.form.deliveryAddress') }}</legend>
+            <p class="text-[0.7rem] text-slate-500 sm:col-span-6">
+              {{ i18n.t('pme.form.deliveryHint') }}
+            </p>
+
+            <div class="sm:col-span-6">
+              <label class="field-label" for="deliveryStreet">{{
+                i18n.t('pme.form.street')
+              }}</label>
+              <input
+                id="deliveryStreet"
+                name="deliveryStreet"
+                class="field"
+                [(ngModel)]="delivery.street"
+              />
+            </div>
+            <div class="sm:col-span-2">
+              <label class="field-label" for="deliveryPostal">{{
+                i18n.t('pme.form.postalCode')
+              }}</label>
+              <input
+                id="deliveryPostal"
+                name="deliveryPostal"
+                class="field"
+                inputmode="numeric"
+                [(ngModel)]="delivery.postalCode"
+              />
+            </div>
+            <div class="sm:col-span-3">
+              <label class="field-label" for="deliveryCity">{{ i18n.t('pme.form.city') }}</label>
+              <input
+                id="deliveryCity"
+                name="deliveryCity"
+                class="field"
+                [(ngModel)]="delivery.city"
+              />
+            </div>
+            <div class="sm:col-span-1">
+              <label class="field-label" for="deliveryCountry">{{
+                i18n.t('pme.form.country')
+              }}</label>
+              <input
+                id="deliveryCountry"
+                name="deliveryCountry"
+                class="field uppercase"
+                maxlength="2"
+                [(ngModel)]="delivery.countryCode"
+              />
+            </div>
+          </fieldset>
+        }
+      </div>
+
+      <div class="mt-6 flex items-center justify-end gap-2">
+        <p class="field-required-note mr-auto">{{ i18n.t('form.requiredNote') }}</p>
+        <button type="button" class="btn-secondary" (click)="formOpen.set(false)">
+          {{ i18n.t('common.cancel') }}
+        </button>
+        <button type="submit" class="btn-primary">{{ i18n.t('common.save') }}</button>
+      </div>
+    </form>
+  </app-modal>
+}

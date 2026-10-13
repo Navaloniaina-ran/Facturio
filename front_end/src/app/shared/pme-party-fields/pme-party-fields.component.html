@@ -1,0 +1,218 @@
+@let party = draft();
+
+<div class="space-y-5">
+  <!-- Type de tiers : il commande l'affichage du bloc d'identité légale. -->
+  <fieldset>
+    <legend class="field-label">{{ i18n.t('pme.form.kind') }}</legend>
+    <div class="mt-1 flex gap-2">
+      <button
+        type="button"
+        class="flex-1 rounded-xl px-3 py-2 text-sm font-medium ring-1 transition"
+        [class]="
+          party.kind === 'COMPANY'
+            ? 'bg-slate-800 text-white ring-slate-800'
+            : 'bg-white text-slate-600 ring-slate-200 hover:bg-slate-50'
+        "
+        [attr.aria-pressed]="party.kind === 'COMPANY'"
+        (click)="party.kind = 'COMPANY'"
+      >
+        {{ i18n.t('pme.party.company') }}
+      </button>
+      <button
+        type="button"
+        class="flex-1 rounded-xl px-3 py-2 text-sm font-medium ring-1 transition"
+        [class]="
+          party.kind === 'INDIVIDUAL'
+            ? 'bg-slate-800 text-white ring-slate-800'
+            : 'bg-white text-slate-600 ring-slate-200 hover:bg-slate-50'
+        "
+        [attr.aria-pressed]="party.kind === 'INDIVIDUAL'"
+        (click)="party.kind = 'INDIVIDUAL'"
+      >
+        {{ i18n.t('pme.party.individual') }}
+      </button>
+    </div>
+  </fieldset>
+
+  <div class="grid gap-4 sm:grid-cols-2">
+    <div class="sm:col-span-2">
+      <label class="field-label" for="partyName">{{ i18n.t('pme.form.name') }}</label>
+      <input id="partyName" name="partyName" class="field" required [(ngModel)]="party.name" />
+      <p class="field-error">{{ i18n.t('pme.form.error.name') }}</p>
+    </div>
+
+    <div>
+      <label class="field-label" for="partyContact">{{ i18n.t('pme.form.contact') }}</label>
+      <input id="partyContact" name="partyContact" class="field" [(ngModel)]="party.contact" />
+    </div>
+
+    <div>
+      <label class="field-label" for="partyEmail">{{ i18n.t('pme.form.email') }}</label>
+      <input
+        id="partyEmail"
+        name="partyEmail"
+        type="email"
+        class="field"
+        autocomplete="email"
+        [(ngModel)]="party.email"
+      />
+      <p class="field-error">{{ i18n.t('pme.form.error.email') }}</p>
+    </div>
+
+    <div>
+      <label class="field-label" for="partyPhone">{{ i18n.t('pme.form.phone') }}</label>
+      <input id="partyPhone" name="partyPhone" type="tel" class="field" [(ngModel)]="party.phone" />
+    </div>
+
+    <div>
+      <label class="field-label" for="partyTerms">{{ i18n.t('pme.form.paymentTerms') }}</label>
+      <input
+        id="partyTerms"
+        name="partyTerms"
+        type="number"
+        min="0"
+        max="60"
+        class="field"
+        [(ngModel)]="party.paymentTermsDays"
+      />
+      <p class="field-error">{{ i18n.t('pme.form.error.termsTooLong') }}</p>
+      <p class="field-hint">{{ i18n.t('pme.form.paymentTermsHint') }}</p>
+    </div>
+  </div>
+
+  <!-- Adresse de facturation -->
+  <fieldset class="grid gap-4 sm:grid-cols-6">
+    <legend class="field-label mb-1">{{ i18n.t('pme.form.billingAddress') }}</legend>
+
+    <div class="sm:col-span-6">
+      <label class="field-label" for="partyStreet">{{ i18n.t('pme.form.street') }}</label>
+      <input id="partyStreet" name="partyStreet" class="field" [(ngModel)]="party.address.street" />
+    </div>
+    <div class="sm:col-span-2">
+      <label class="field-label" for="partyPostal">{{ i18n.t('pme.form.postalCode') }}</label>
+      <input
+        id="partyPostal"
+        name="partyPostal"
+        class="field"
+        inputmode="numeric"
+        [(ngModel)]="party.address.postalCode"
+      />
+    </div>
+    <div class="sm:col-span-3">
+      <label class="field-label" for="partyCity">{{ i18n.t('pme.form.city') }}</label>
+      <input id="partyCity" name="partyCity" class="field" [(ngModel)]="party.address.city" />
+    </div>
+    <div class="sm:col-span-1">
+      <label class="field-label" for="partyCountry">{{ i18n.t('pme.form.country') }}</label>
+      <input
+        id="partyCountry"
+        name="partyCountry"
+        class="field uppercase"
+        maxlength="2"
+        [(ngModel)]="party.address.countryCode"
+      />
+    </div>
+  </fieldset>
+
+  <!-- Identité légale : sans objet pour un particulier. -->
+  @if (party.kind === 'COMPANY') {
+    <fieldset class="grid gap-4 sm:grid-cols-2">
+      <legend class="field-label mb-1">{{ i18n.t('pme.form.legalIdentity') }}</legend>
+
+      <div>
+        <label class="field-label" for="partySiren">{{ i18n.t('pme.form.siren') }}</label>
+        <input
+          id="partySiren"
+          name="partySiren"
+          class="field font-mono"
+          inputmode="numeric"
+          required
+          [(ngModel)]="party.identity.siren"
+        />
+        <p class="field-error">{{ i18n.t('pme.form.error.sirenRequired') }}</p>
+        <p class="field-hint">{{ i18n.t('pme.form.sirenHint') }}</p>
+      </div>
+
+      <div>
+        <label class="field-label" for="partySiret">{{ i18n.t('pme.form.siret') }}</label>
+        <input
+          id="partySiret"
+          name="partySiret"
+          class="field font-mono"
+          inputmode="numeric"
+          [(ngModel)]="party.identity.siret"
+        />
+        <p class="field-hint">{{ i18n.t('pme.form.siretHint') }}</p>
+      </div>
+
+      <div>
+        <label class="field-label" for="partyVat">{{ i18n.t('pme.form.vatNumber') }}</label>
+        <input
+          id="partyVat"
+          name="partyVat"
+          class="field font-mono uppercase"
+          [(ngModel)]="party.identity.vatNumber"
+        />
+      </div>
+
+      <div>
+        <label class="field-label" for="partyLegalForm">{{ i18n.t('pme.form.legalForm') }}</label>
+        <select
+          id="partyLegalForm"
+          name="partyLegalForm"
+          class="field"
+          [(ngModel)]="party.identity.legalForm"
+        >
+          <option [ngValue]="null">{{ i18n.t('common.none') }}</option>
+          @for (form of legalForms; track form) {
+            <option [ngValue]="form">{{ form }}</option>
+          }
+        </select>
+      </div>
+
+      <div>
+        <label class="field-label" for="partyRcs">{{ i18n.t('pme.form.rcsCity') }}</label>
+        <input id="partyRcs" name="partyRcs" class="field" [(ngModel)]="party.identity.rcsCity" />
+      </div>
+
+      <div>
+        <label class="field-label" for="partyCapital">{{ i18n.t('pme.form.shareCapital') }}</label>
+        <input
+          id="partyCapital"
+          name="partyCapital"
+          type="number"
+          min="0"
+          class="field"
+          [(ngModel)]="party.identity.shareCapital"
+        />
+      </div>
+
+      <div>
+        <label class="field-label" for="partyNaf">{{ i18n.t('pme.form.napCode') }}</label>
+        <input
+          id="partyNaf"
+          name="partyNaf"
+          class="field font-mono uppercase"
+          maxlength="5"
+          [(ngModel)]="party.identity.napCode"
+        />
+      </div>
+    </fieldset>
+  }
+
+  <div>
+    <label class="field-label" for="partyNotes">{{ i18n.t('pme.form.notes') }}</label>
+    <textarea
+      id="partyNotes"
+      name="partyNotes"
+      rows="2"
+      class="field"
+      [(ngModel)]="party.notes"
+    ></textarea>
+  </div>
+
+  <label class="flex items-center gap-2 text-sm text-slate-700">
+    <input type="checkbox" name="partyActive" class="size-4" [(ngModel)]="party.active" />
+    {{ i18n.t('pme.form.active') }}
+  </label>
+</div>
