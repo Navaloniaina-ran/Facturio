@@ -1,22 +1,27 @@
 <div class="space-y-5">
-  <div class="flex flex-wrap items-end justify-between gap-4">
-    <div>
-      <h1 class="text-xl font-semibold text-slate-900">{{ i18n.t('nav.payments') }}</h1>
-      <p class="mt-1 text-sm text-slate-500">
-        {{ i18n.t('payments.subtitle', { count: service.list().length }) }}
-      </p>
-    </div>
-    <button type="button" class="btn-primary" (click)="open()">{{ i18n.t('payments.new') }}</button>
-  </div>
+  <app-page-header
+    icon="payments"
+    tone="emerald"
+    [title]="i18n.t('nav.payments')"
+    [subtitle]="i18n.t('payments.subtitle', { count: service.list().length })"
+  >
+    <button type="button" class="btn-primary" (click)="open()">
+      {{ i18n.t('payments.new') }}
+    </button>
+  </app-page-header>
 
   <div class="grid gap-3 sm:grid-cols-4">
     <div class="card p-4">
-      <p class="text-xs text-slate-500">{{ i18n.t('payments.sum.total') }}</p>
-      <p class="num mt-1 text-lg font-semibold text-emerald-600">{{ service.collected() | amount }}</p>
+      <p class="stat-label">{{ i18n.t('payments.sum.total') }}</p>
+      <p class="num mt-1 text-lg font-semibold text-emerald-600">
+        {{ service.collected() | amount }}
+      </p>
     </div>
     <div class="card p-4">
       <p class="text-xs text-slate-500">{{ i18n.t('payments.sum.month') }}</p>
-      <p class="num mt-1 text-lg font-semibold text-slate-900">{{ service.collectedThisMonth() | amount }}</p>
+      <p class="stat-value">
+        {{ service.collectedThisMonth() | amount }}
+      </p>
     </div>
     <div class="card p-4">
       <p class="text-xs text-slate-500">{{ i18n.t('kpi.pending') }}</p>
@@ -29,11 +34,13 @@
   </div>
 
   @if (message()) {
-    <p class="rounded-xl bg-brand-50 px-4 py-3 text-sm text-brand-800 ring-1 ring-brand-200">{{ message() }}</p>
+    <p class="flash">
+      {{ message() }}
+    </p>
   }
 
   <div class="card overflow-hidden">
-    <div class="overflow-x-auto">
+    <div class="table-wrap">
       <table class="w-full min-w-[52rem]">
         <thead class="bg-slate-50/80">
           <tr>
@@ -70,7 +77,17 @@
             </tr>
           } @empty {
             <tr>
-              <td class="td-cell text-slate-500" colspan="7">{{ i18n.t('payments.empty') }}</td>
+              <td colspan="7" class="p-4">
+                <div class="empty-state">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path [attr.d]="icons.inbox" />
+                  </svg>
+                  <p>{{ i18n.t('payments.empty') }}</p>
+                  <button type="button" class="btn-secondary" (click)="open()">
+                    {{ i18n.t('payments.new') }}
+                  </button>
+                </div>
+              </td>
             </tr>
           }
         </tbody>
@@ -80,7 +97,7 @@
 
   <!-- Restes dus -->
   <section class="card p-5">
-    <h2 class="text-sm font-semibold text-slate-900">{{ i18n.t('payments.outstandingTitle') }}</h2>
+    <h2 class="card-title">{{ i18n.t('payments.outstandingTitle') }}</h2>
     <ul class="mt-3 divide-y divide-slate-100">
       @for (invoice of service.dueInvoices(); track invoice.id) {
         <li class="flex items-center justify-between gap-3 py-2.5 text-sm">
@@ -113,10 +130,22 @@
     [subtitle]="i18n.t('payments.form.subtitle')"
     (closed)="close()"
   >
-    <form class="space-y-5" (ngSubmit)="save()">
+    <form
+      class="space-y-5"
+      novalidate
+      #paymentForm="ngForm"
+      (ngSubmit)="paymentForm.valid && save()"
+    >
       <div>
         <label class="field-label" for="invoice">{{ i18n.t('payments.form.invoice') }}</label>
-        <select id="invoice" name="invoice" class="field" [(ngModel)]="draft.invoiceId" (ngModelChange)="refreshAmount()">
+        <select
+          id="invoice"
+          name="invoice"
+          class="field"
+          required
+          [(ngModel)]="draft.invoiceId"
+          (ngModelChange)="refreshAmount()"
+        >
           @for (invoice of service.dueInvoices(); track invoice.id) {
             <option [value]="invoice.id">
               {{
@@ -131,19 +160,40 @@
             <option value="">{{ i18n.t('payments.form.noneDue') }}</option>
           }
         </select>
+        <p class="field-error">{{ i18n.t('form.requiredSelect') }}</p>
       </div>
 
       <div class="grid gap-4 sm:grid-cols-2">
         <div>
           <label class="field-label" for="amount">{{ i18n.t('invoices.payment.amount') }}</label>
-          <input id="amount" name="amount" type="number" min="0" step="0.01" class="field" [(ngModel)]="draft.amount" />
-          <p class="mt-1 text-xs text-slate-500">
-            {{ i18n.t('payments.form.outstandingHint', { amount: (selectedOutstanding() | amount) }) }}
+          <input
+            id="amount"
+            name="amount"
+            type="number"
+            min="0.01"
+            step="0.01"
+            class="field"
+            [(ngModel)]="draft.amount"
+            required
+          />
+          <p class="field-error">{{ i18n.t('payment.error.amount') }}</p>
+          <p class="field-hint">
+            {{
+              i18n.t('payments.form.outstandingHint', { amount: (selectedOutstanding() | amount) })
+            }}
           </p>
         </div>
         <div>
           <label class="field-label" for="date">{{ i18n.t('invoices.payment.date') }}</label>
-          <input id="date" name="date" type="date" class="field" [(ngModel)]="draft.date" />
+          <input
+            id="date"
+            name="date"
+            type="date"
+            class="field"
+            [(ngModel)]="draft.date"
+            required
+          />
+          <p class="field-error">{{ i18n.t('form.required') }}</p>
         </div>
       </div>
 
@@ -157,8 +207,16 @@
           </select>
         </div>
         <div>
-          <label class="field-label" for="reference">{{ i18n.t('invoices.payment.reference') }}</label>
-          <input id="reference" name="reference" class="field" placeholder="VIR-88213" [(ngModel)]="draft.reference" />
+          <label class="field-label" for="reference">{{
+            i18n.t('invoices.payment.reference')
+          }}</label>
+          <input
+            id="reference"
+            name="reference"
+            class="field"
+            placeholder="VIR-88213"
+            [(ngModel)]="draft.reference"
+          />
         </div>
       </div>
 
@@ -173,12 +231,19 @@
         />
       </div>
 
-      @if (error()) {
-        <p class="rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700 ring-1 ring-rose-200" role="alert">{{ error() }}</p>
+      @if (paymentForm.submitted && paymentForm.invalid) {
+        <p class="alert-error" role="alert">{{ i18n.t('form.incomplete') }}</p>
       }
 
-      <div class="flex justify-end gap-3">
-        <button type="button" class="btn-secondary" (click)="close()">{{ i18n.t('common.cancel') }}</button>
+      @if (error()) {
+        <p class="alert-error" role="alert">{{ error() }}</p>
+      }
+
+      <div class="flex items-center justify-end gap-3">
+        <p class="field-required-note mr-auto">{{ i18n.t('form.requiredNote') }}</p>
+        <button type="button" class="btn-secondary" (click)="close()">
+          {{ i18n.t('common.cancel') }}
+        </button>
         <button type="submit" class="btn-primary">{{ i18n.t('common.save') }}</button>
       </div>
     </form>

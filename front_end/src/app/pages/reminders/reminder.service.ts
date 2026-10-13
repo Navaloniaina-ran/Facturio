@@ -1,4 +1,5 @@
 import { Injectable, computed, inject } from '@angular/core';
+import { BillingApiService } from '../../core/api/billing-api.service';
 import { addDays, daysBetween, today } from '../../core/calculations';
 import { I18nService } from '../../core/i18n/i18n.service';
 import { ActionResult, Reminder, ReminderStep } from '../../core/models';
@@ -26,6 +27,7 @@ export class ReminderService {
   private readonly store = inject(WorkspaceStore);
   private readonly invoices = inject(InvoiceService);
   private readonly i18n = inject(I18nService);
+  private readonly api = inject(BillingApiService);
 
   readonly steps = this.store.reminderSteps.asReadonly();
   readonly mode = this.store.reminderMode.asReadonly();
@@ -42,9 +44,7 @@ export class ReminderService {
           stepLabelKey: this.steps().find((s) => s.id === reminder.stepId)?.labelKey ?? '',
         };
       })
-      .sort((a, b) =>
-        (b.sentDate ?? b.scheduledDate).localeCompare(a.sentDate ?? a.scheduledDate),
-      ),
+      .sort((a, b) => (b.sentDate ?? b.scheduledDate).localeCompare(a.sentDate ?? a.scheduledDate)),
   );
 
   /** Étapes échues et non encore envoyées : ce qu'il faut traiter aujourd'hui. */
@@ -76,7 +76,8 @@ export class ReminderService {
   });
 
   readonly sentToday = computed(
-    () => this.store.reminders().filter((r) => r.status === 'SENT' && r.sentDate === today()).length,
+    () =>
+      this.store.reminders().filter((r) => r.status === 'SENT' && r.sentDate === today()).length,
   );
 
   historyFor(invoiceId: string): ReminderView[] {
@@ -100,6 +101,15 @@ export class ReminderService {
       if (block) {
         return { ok: false, errorKey: block.errorKey, params: block.params };
       }
+    }
+
+    if (this.store.remote()) {
+      this.api.toggleReminderRule(id, !step.active).subscribe((updated) => {
+        this.store.reminderSteps.update((steps) =>
+          steps.map((item) => (item.id === id ? updated : item)),
+        );
+      });
+      return { ok: true };
     }
 
     this.store.reminderSteps.update((steps) =>
@@ -140,6 +150,38 @@ export class ReminderService {
       return { ok: false, errorKey: 'reminder.error.cap', params: { cap: DAILY_SEND_CAP } };
     }
 
+    if (this.store.remote()) {
+      const scheduled = this.store
+        .reminders()
+        .find(
+          (reminder) =>
+            reminder.invoiceId === item.invoice.id &&
+            reminder.stepId === item.step.id &&
+            reminder.status === 'SCHEDULED',
+        );
+      if (!scheduled) {
+        this.api
+          .createReminder(
+            item.invoice.id,
+            item.step.id,
+            item.scheduledDate,
+            content || this.suggestedMessage(item),
+            true,
+          )
+          .subscribe({
+            next: (reminder) => this.store.reminders.update((items) => [reminder, ...items]),
+            error: () => undefined,
+          });
+        return { ok: true };
+      }
+      this.api.reminderAction(scheduled.id, 'send').subscribe((reminder) => {
+        this.store.reminders.update((items) =>
+          items.map((item) => (item.id === reminder.id ? reminder : item)),
+        );
+      });
+      return { ok: true };
+    }
+
     const reminder: Reminder = {
       id: this.store.newId('r'),
       invoiceId: item.invoice.id,
@@ -161,6 +203,23 @@ export class ReminderService {
 
   /** Reporte l'étape en enregistrant une relance programmée à une date ultérieure. */
   postpone(item: QueueItem, days = 3): void {
+    if (this.store.remote()) {
+      const scheduledDate = addDays(today(), days);
+      this.api
+        .createReminder(
+          item.invoice.id,
+          item.step.id,
+          scheduledDate,
+          this.suggestedMessage(item),
+          false,
+        )
+        .subscribe({
+          next: (reminder) => this.store.reminders.update((items) => [reminder, ...items]),
+          error: () => undefined,
+        });
+      return;
+    }
+
     const reminder: Reminder = {
       id: this.store.newId('r'),
       invoiceId: item.invoice.id,
@@ -176,6 +235,18 @@ export class ReminderService {
 
   /** Garde-fou : plus aucune relance dès que la facture est intégralement payée. */
   cancelFor(invoiceId: string): void {
+    if (this.store.remote()) {
+      for (const reminder of this.store
+        .reminders()
+        .filter((item) => item.invoiceId === invoiceId && item.status === 'SCHEDULED')) {
+        this.api.reminderAction(reminder.id, 'cancel').subscribe((updated) => {
+          this.store.reminders.update((items) =>
+            items.map((item) => (item.id === updated.id ? updated : item)),
+          );
+        });
+      }
+      return;
+    }
     this.store.reminders.update((reminders) =>
       reminders.map((reminder) =>
         reminder.invoiceId === invoiceId && reminder.status === 'SCHEDULED'

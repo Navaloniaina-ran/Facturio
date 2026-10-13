@@ -56,9 +56,7 @@ describe('PaymentsComponent', () => {
     const service = TestBed.inject(PaymentService);
     const before = service.list().length;
 
-    (
-      fixture.nativeElement.querySelector('tbody [title="Supprimer"]') as HTMLButtonElement
-    ).click();
+    (fixture.nativeElement.querySelector('tbody [title="Supprimer"]') as HTMLButtonElement).click();
     await fixture.whenStable();
 
     expect(service.list().length).toBe(before - 1);

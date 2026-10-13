@@ -8,16 +8,27 @@ import { LocalDatePipe } from '../../shared/local-date.pipe';
 import { IconButtonComponent } from '../../shared/icon-button/icon-button.component';
 import { ModalComponent } from '../../shared/modal/modal.component';
 import { PaymentService } from './payment.service';
+import { ICONS } from '../../shared/icons';
+import { PageHeaderComponent } from '../../shared/page-header/page-header.component';
 
 const METHODS: PaymentMethod[] = ['TRANSFER', 'MOBILE_MONEY', 'CARD', 'CASH', 'PAYPAL'];
 
 /** Encaissements : une facture peut recevoir N paiements (P07). */
 @Component({
   selector: 'app-payments',
-  imports: [FormsModule, AmountPipe, LocalDatePipe, ModalComponent, IconButtonComponent],
+  imports: [
+    PageHeaderComponent,
+    FormsModule,
+    AmountPipe,
+    LocalDatePipe,
+    ModalComponent,
+    IconButtonComponent,
+  ],
   templateUrl: './payments.component.html',
 })
 export class PaymentsComponent {
+  protected readonly icons = ICONS;
+
   protected readonly i18n = inject(I18nService);
   protected readonly service = inject(PaymentService);
 

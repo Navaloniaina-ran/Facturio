@@ -1,4 +1,5 @@
 import { Injectable, computed, inject } from '@angular/core';
+import { BillingApiService } from '../../core/api/billing-api.service';
 import { round, today } from '../../core/calculations';
 import { ActionResult, Payment, PaymentMethod } from '../../core/models';
 import { WorkspaceStore } from '../../core/workspace-store.service';
@@ -24,6 +25,7 @@ export class PaymentService {
   private readonly store = inject(WorkspaceStore);
   private readonly invoices = inject(InvoiceService);
   private readonly reminders = inject(ReminderService);
+  private readonly api = inject(BillingApiService);
 
   readonly list = computed<PaymentView[]>(() =>
     this.store
@@ -86,6 +88,14 @@ export class PaymentService {
       };
     }
 
+    if (this.store.remote()) {
+      this.api.createPayment(draft).subscribe((payment) => {
+        this.store.payments.update((payments) => [payment, ...payments]);
+        this.invoices.recomputeStatuses();
+      });
+      return { ok: true, value: { settled: draft.amount === invoice.outstanding } };
+    }
+
     const payment: Payment = { ...draft, id: this.store.newId('p') };
     this.store.payments.update((payments) => [payment, ...payments]);
     this.invoices.recomputeStatuses();
@@ -106,6 +116,13 @@ export class PaymentService {
   /** Toute suppression est tracée et recalcule le statut de la facture. */
   remove(id: string): void {
     const payment = this.list().find((p) => p.id === id);
+    if (this.store.remote()) {
+      this.api.deletePayment(id).subscribe(() => {
+        this.store.payments.update((payments) => payments.filter((item) => item.id !== id));
+        this.invoices.recomputeStatuses();
+      });
+      return;
+    }
     this.store.payments.update((payments) => payments.filter((p) => p.id !== id));
     this.invoices.recomputeStatuses();
 

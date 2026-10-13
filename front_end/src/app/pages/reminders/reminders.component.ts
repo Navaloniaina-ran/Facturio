@@ -8,6 +8,7 @@ import { IconButtonComponent } from '../../shared/icon-button/icon-button.compon
 import { ModalComponent } from '../../shared/modal/modal.component';
 import { StatusBadgeComponent } from '../../shared/status-badge/status-badge.component';
 import { DAILY_SEND_CAP, QueueItem, ReminderService } from './reminder.service';
+import { PageHeaderComponent } from '../../shared/page-header/page-header.component';
 
 /**
  * Moteur de relances (P03) : c'est ce module qui distingue le produit
@@ -16,6 +17,7 @@ import { DAILY_SEND_CAP, QueueItem, ReminderService } from './reminder.service';
 @Component({
   selector: 'app-reminders',
   imports: [
+    PageHeaderComponent,
     FormsModule,
     AmountPipe,
     LocalDatePipe,
