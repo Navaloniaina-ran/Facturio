@@ -1,9 +1,11 @@
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { AuthService } from '../../core/auth.service';
+import { AuthService, DEMO_ACCOUNTS } from '../../core/auth.service';
+import { WorkspaceType } from '../../core/models';
 import { I18nService } from '../../core/i18n/i18n.service';
 import { LanguageSwitchComponent } from '../../shared/language-switch/language-switch.component';
+import { WorkspaceRoutes } from '../../core/workspace-routes';
 
 /**
  * Tunnel de connexion créateur (/createurs/connexion).
@@ -15,8 +17,10 @@ import { LanguageSwitchComponent } from '../../shared/language-switch/language-s
   selector: 'app-login',
   imports: [FormsModule, RouterLink, LanguageSwitchComponent],
   templateUrl: './login.component.html',
+  styleUrl: './login.component.css',
 })
 export class LoginComponent {
+  private readonly routes = inject(WorkspaceRoutes);
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
@@ -27,38 +31,41 @@ export class LoginComponent {
   protected email = '';
   protected password = '';
   protected readonly error = signal<string | null>(null);
-  protected readonly info = signal<string | null>(null);
+  protected readonly loading = signal(false);
 
   /** Chaîne d'avancement mise en avant sur le panneau de gauche. */
-  protected readonly chain = ['login.chain1', 'login.chain2', 'login.chain3', 'login.chain4'];
+  protected readonly chain = this.businessPortal
+    ? [
+        'login.businessChain1',
+        'login.businessChain2',
+        'login.businessChain3',
+        'login.businessChain4',
+      ]
+    : ['login.chain1', 'login.chain2', 'login.chain3', 'login.chain4'];
 
   protected submit(): void {
-    const result = this.auth.signIn(this.email, this.password);
-
-    if (!result.ok) {
-      this.error.set(this.i18n.error(result));
-      return;
-    }
-
+    this.loading.set(true);
     this.error.set(null);
-    void this.router.navigate(['/app/tableau-de-bord'], {
-      state: this.businessPortal ? { spaceNotice: this.i18n.t('login.spaceNotice') } : {},
-    });
+    this.auth
+      .signIn(this.email, this.password, this.businessPortal ? 'BUSINESS' : 'CREATOR')
+      .subscribe((result) => {
+        this.loading.set(false);
+        if (!result.ok) {
+          this.error.set(this.i18n.error(result));
+          return;
+        }
+        void this.router.navigate([this.routes.home()]);
+      });
   }
 
   /** Accès direct au jeu de données de démonstration. */
-  protected enterDemo(): void {
-    this.email = 'toky@callandco.fr';
-    this.password = 'demonstration';
+  protected enterDemo(workspaceType: WorkspaceType): void {
+    const account = DEMO_ACCOUNTS.find((item) => item.workspaceType === workspaceType);
+    if (!account) {
+      return;
+    }
+    this.email = account.email;
+    this.password = account.password;
     this.submit();
-  }
-
-  protected googleSignIn(): void {
-    this.info.set(this.i18n.t('login.googleSoon'));
-  }
-
-  /** Message neutre quel que soit le résultat, pour ne rien révéler. */
-  protected forgotPassword(): void {
-    this.info.set(this.i18n.t('login.forgotSent'));
   }
 }

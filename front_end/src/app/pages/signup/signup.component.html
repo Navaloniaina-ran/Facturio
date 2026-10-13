@@ -2,7 +2,10 @@
   <div class="w-full max-w-xl">
     <div class="mb-8 flex items-center justify-between gap-3">
       <div class="flex items-center gap-3">
-        <span class="grid size-10 place-items-center rounded-xl bg-gradient-to-br from-brand-400 to-brand-700 font-bold text-white">F</span>
+        <span
+          class="grid size-10 place-items-center rounded-xl bg-gradient-to-br from-brand-400 to-brand-700 font-bold text-white"
+          >F</span
+        >
         <span class="text-sm font-semibold text-slate-900">{{ i18n.t('app.name') }}</span>
       </div>
       <app-language-switch />
@@ -30,53 +33,129 @@
       </p>
 
       @if (step() === 1) {
-        <form class="mt-8 space-y-5" (ngSubmit)="next()">
+        <form
+          class="mt-7 space-y-5"
+          novalidate
+          #stepOneForm="ngForm"
+          (ngSubmit)="stepOneForm.valid && next()"
+        >
           <div class="grid gap-5 sm:grid-cols-2">
             <div>
               <label class="field-label" for="name">{{ i18n.t('signup.name') }}</label>
-              <input id="name" name="name" class="field" placeholder="Toky Raherimana" [(ngModel)]="form.name" required />
+              <input
+                id="name"
+                name="name"
+                class="field"
+                autocomplete="name"
+                placeholder="Toky Raherimana"
+                [(ngModel)]="form.name"
+                required
+                minlength="2"
+              />
+              <p class="field-error">{{ i18n.t('form.required') }}</p>
             </div>
             <div>
               <label class="field-label" for="handle">{{ i18n.t('signup.handle') }}</label>
-              <input id="handle" name="handle" class="field" placeholder="@toky.creates" [(ngModel)]="form.handle" />
+              <input
+                id="handle"
+                name="handle"
+                class="field"
+                autocomplete="nickname"
+                placeholder="@toky.creates"
+                [(ngModel)]="form.handle"
+              />
+              <p class="field-hint">{{ i18n.t('signup.handleHint') }}</p>
             </div>
           </div>
 
           <div>
             <label class="field-label" for="email">{{ i18n.t('login.email') }}</label>
-            <input id="email" name="email" type="email" class="field" placeholder="vous@exemple.com" [(ngModel)]="form.email" required />
-          </div>
-
-          <div>
-            <label class="field-label" for="password">{{ i18n.t('login.password') }}</label>
             <input
-              id="password"
-              name="password"
-              type="password"
+              id="email"
+              name="email"
+              type="email"
               class="field"
-              [placeholder]="i18n.t('signup.passwordHint')"
-              [(ngModel)]="form.password"
+              autocomplete="email"
+              placeholder="vous@exemple.com"
+              [(ngModel)]="form.email"
               required
             />
+            <p class="field-error">{{ i18n.t('form.email') }}</p>
           </div>
 
+          <div class="grid gap-5 sm:grid-cols-2">
+            <div>
+              <label class="field-label" for="password">{{ i18n.t('login.password') }}</label>
+              <input
+                id="password"
+                name="password"
+                type="password"
+                class="field"
+                autocomplete="new-password"
+                [placeholder]="i18n.t('signup.passwordHint')"
+                [(ngModel)]="form.password"
+                required
+                minlength="8"
+              />
+              <p class="field-error">{{ i18n.t('form.minLength8') }}</p>
+            </div>
+            <div>
+              <label class="field-label" for="confirmPassword">{{
+                i18n.t('signup.confirmPassword')
+              }}</label>
+              <input
+                id="confirmPassword"
+                name="confirmPassword"
+                type="password"
+                class="field"
+                autocomplete="new-password"
+                [(ngModel)]="confirmPassword"
+                required
+                minlength="8"
+              />
+              <p class="field-error">{{ i18n.t('form.minLength8') }}</p>
+            </div>
+          </div>
+
+          @if (stepOneForm.submitted && stepOneForm.invalid) {
+            <p class="alert-error" role="alert">{{ i18n.t('form.incomplete') }}</p>
+          }
+
           @if (error()) {
-            <p class="rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700 ring-1 ring-rose-200" role="alert">{{ error() }}</p>
+            <p class="alert-error" role="alert">
+              {{ error() }}
+            </p>
           }
 
           <button type="submit" class="btn-primary w-full">{{ i18n.t('signup.continue') }}</button>
+          <p class="field-required-note text-center">{{ i18n.t('form.requiredNote') }}</p>
         </form>
       } @else {
-        <form class="mt-8 space-y-6" (ngSubmit)="submit()">
+        <form
+          class="mt-8 space-y-6"
+          novalidate
+          #stepTwoForm="ngForm"
+          (ngSubmit)="stepTwoForm.valid && submit()"
+        >
           <div>
             <span class="field-label">{{ i18n.t('signup.youAre') }}</span>
             <div class="grid gap-2 sm:grid-cols-3">
               @for (profile of profiles; track profile) {
                 <label
                   class="cursor-pointer rounded-xl px-3 py-2.5 text-center text-sm font-medium ring-1 transition"
-                  [class]="form.subProfile === profile ? 'bg-brand-50 text-brand-700 ring-brand-300' : 'bg-white text-slate-600 ring-slate-200 hover:bg-slate-50'"
+                  [class]="
+                    form.subProfile === profile
+                      ? 'bg-brand-50 text-brand-700 ring-brand-300'
+                      : 'bg-white text-slate-600 ring-slate-200 hover:bg-slate-50'
+                  "
                 >
-                  <input type="radio" name="subProfile" class="sr-only" [value]="profile" [(ngModel)]="form.subProfile" />
+                  <input
+                    type="radio"
+                    name="subProfile"
+                    class="sr-only"
+                    [value]="profile"
+                    [(ngModel)]="form.subProfile"
+                  />
                   {{ i18n.t('profile.' + profile) }}
                 </label>
               }
@@ -90,7 +169,11 @@
                 <button
                   type="button"
                   class="rounded-full px-3.5 py-1.5 text-sm font-medium ring-1 transition"
-                  [class]="platformSelected(platform) ? 'bg-brand-600 text-white ring-brand-600' : 'bg-white text-slate-600 ring-slate-200 hover:bg-slate-50'"
+                  [class]="
+                    platformSelected(platform)
+                      ? 'bg-brand-600 text-white ring-brand-600'
+                      : 'bg-white text-slate-600 ring-slate-200 hover:bg-slate-50'
+                  "
                   [attr.aria-pressed]="platformSelected(platform)"
                   (click)="togglePlatform(platform)"
                 >
@@ -107,41 +190,74 @@
             </div>
             <div>
               <label class="field-label" for="country">{{ i18n.t('signup.country') }}</label>
-              <input id="country" name="country" class="field" [(ngModel)]="form.country" />
-            </div>
-          </div>
-
-          <div class="grid gap-5 sm:grid-cols-2">
-            <div>
-              <label class="field-label" for="currency">{{ i18n.t('signup.currency') }}</label>
-              <select id="currency" name="currency" class="field" [(ngModel)]="form.currency">
-                @for (currency of currencies; track currency) {
-                  <option [value]="currency">{{ currency }}</option>
+              <select id="country" name="country" class="field" [(ngModel)]="form.country" required>
+                @for (country of countries; track country) {
+                  <option [value]="country">{{ country }}</option>
                 }
               </select>
             </div>
-            <div>
-              <span class="field-label">{{ i18n.t('signup.vat') }}</span>
-              <label class="flex items-center gap-3 rounded-xl bg-slate-50 px-3.5 py-2.5 text-sm text-slate-700 ring-1 ring-slate-200">
-                <input type="checkbox" name="vatRegistered" class="size-4 rounded accent-brand-600" [(ngModel)]="form.vatRegistered" />
-                {{ i18n.t('signup.vatYes') }}
-              </label>
-            </div>
           </div>
 
-          <label class="flex items-start gap-3 text-sm text-slate-600">
-            <input type="checkbox" name="terms" class="mt-0.5 size-4 rounded accent-brand-600" [(ngModel)]="termsAccepted" />
-            <span>{{ i18n.t('signup.terms') }}</span>
-          </label>
+          <div>
+            <label class="field-label" for="currency">{{ i18n.t('signup.currency') }}</label>
+            <select
+              id="currency"
+              name="currency"
+              class="field"
+              [(ngModel)]="form.currency"
+              required
+            >
+              @for (currency of currencies; track currency) {
+                <option [value]="currency">{{ currency }}</option>
+              }
+            </select>
+            <p class="field-hint">{{ i18n.t('signup.currencyHint') }}</p>
+          </div>
+
+          <p class="flash text-xs leading-relaxed">
+            {{ i18n.t('signup.laterNotice') }}
+          </p>
+
+          <div>
+            <label class="flex items-start gap-3 text-sm text-slate-600">
+              <input
+                type="checkbox"
+                name="terms"
+                class="mt-0.5 size-4 rounded accent-brand-600"
+                [(ngModel)]="termsAccepted"
+                required
+              />
+              <span>
+                {{ i18n.t('signup.terms') }}
+                <span class="font-bold text-rose-500" aria-hidden="true">*</span>
+              </span>
+            </label>
+            @if (stepTwoForm.submitted && !termsAccepted) {
+              <p class="mt-1.5 flex text-xs font-medium text-rose-600">
+                {{ i18n.t('form.terms') }}
+              </p>
+            }
+          </div>
+
+          @if (stepTwoForm.submitted && stepTwoForm.invalid) {
+            <p class="alert-error" role="alert">{{ i18n.t('form.incomplete') }}</p>
+          }
 
           @if (error()) {
-            <p class="rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700 ring-1 ring-rose-200" role="alert">{{ error() }}</p>
+            <p class="alert-error" role="alert">
+              {{ error() }}
+            </p>
           }
 
           <div class="flex gap-3">
-            <button type="button" class="btn-secondary" (click)="back()">{{ i18n.t('signup.back') }}</button>
-            <button type="submit" class="btn-primary flex-1">{{ i18n.t('signup.submit') }}</button>
+            <button type="button" class="btn-secondary" (click)="back()">
+              {{ i18n.t('signup.back') }}
+            </button>
+            <button type="submit" class="btn-primary flex-1" [disabled]="loading()">
+              {{ loading() ? i18n.t('signup.saving') : i18n.t('signup.submit') }}
+            </button>
           </div>
+          <p class="field-required-note text-center">{{ i18n.t('form.requiredNote') }}</p>
         </form>
       }
     </div>

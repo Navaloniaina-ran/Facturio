@@ -1,0 +1,35 @@
+/*
+ * Trame de points du panneau de promesse. Un dégradé radial répété plutôt
+ * qu'une image : rien à télécharger, et la densité suit l'écran.
+ */
+.promise-texture {
+  background-image: radial-gradient(rgb(255 255 255 / 0.06) 1px, transparent 1px);
+  background-size: 22px 22px;
+  /* Le motif s'efface vers le bas pour ne pas concurrencer le texte. */
+  mask-image: linear-gradient(to bottom, #000 0%, transparent 75%);
+}
+
+/*
+ * La chaîne d'avancement se lit comme une chaîne : un filet relie les
+ * jalons, interrompu après le dernier.
+ */
+.promise-chain {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.promise-chain li {
+  position: relative;
+}
+
+.promise-chain li:not(:last-child)::before {
+  content: '';
+  position: absolute;
+  left: 0.875rem;
+  top: 1.75rem;
+  bottom: -1rem;
+  width: 1px;
+  background: linear-gradient(to bottom, rgb(255 255 255 / 0.18), rgb(255 255 255 / 0.04));
+}
