@@ -1,10 +1,15 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import { Injectable, computed, inject } from '@angular/core';
+import { Observable, catchError, map, of, switchMap, tap } from 'rxjs';
+import { apiErrorResult } from '../../core/api/api-error';
+import { CreatorApiService } from '../../core/api/creator-api.service';
 import { DEFAULT_VAT_RATE, addDays, round, today } from '../../core/calculations';
 import {
   ActionResult,
   Collaboration,
   CollaborationStage,
   CollaborationType,
+  Line,
 } from '../../core/models';
 import { WorkspaceStore } from '../../core/workspace-store.service';
 import { CampaignService } from '../campaigns/campaign.service';
@@ -65,6 +70,7 @@ export const EMPTY_COLLABORATION: CollaborationDraft = {
 export class CollaborationService {
   private readonly store = inject(WorkspaceStore);
   private readonly campaigns = inject(CampaignService);
+  private readonly api = inject(CreatorApiService);
 
   readonly list = computed<CollaborationView[]>(() =>
     this.store
@@ -118,7 +124,9 @@ export class CollaborationService {
   /** Actions à mener, la plus urgente d'abord. */
   readonly nextActions = computed(() =>
     this.list()
-      .filter((item) => item.nextStepDate !== null && item.stage !== 'DONE' && item.stage !== 'LOST')
+      .filter(
+        (item) => item.nextStepDate !== null && item.stage !== 'DONE' && item.stage !== 'LOST',
+      )
       .sort((a, b) => (a.nextStepDate ?? '').localeCompare(b.nextStepDate ?? ''))
       .slice(0, 5),
   );
@@ -127,66 +135,103 @@ export class CollaborationService {
     return this.list().find((collaboration) => collaboration.id === id);
   }
 
-  create(draft: CollaborationDraft): ActionResult {
+  create(draft: CollaborationDraft): Observable<ActionResult> {
     if (!draft.brandId || !draft.title.trim()) {
-      return { ok: false, errorKey: 'collaboration.error.required' };
+      return of({ ok: false, errorKey: 'collaboration.error.required' });
     }
 
-    const collaboration: Collaboration = {
-      ...draft,
-      id: this.store.newId('k'),
-      campaignId: null,
-      contractName: null,
-    };
-
-    this.store.collaborations.update((list) => [collaboration, ...list]);
-    this.store.log('COLLABORATION', 'collaborations.flash.created');
-    return { ok: true };
-  }
-
-  update(id: string, draft: CollaborationDraft): ActionResult {
-    if (!draft.brandId || !draft.title.trim()) {
-      return { ok: false, errorKey: 'collaboration.error.required' };
+    if (!this.store.remote()) {
+      this.add({ ...draft, id: this.store.newId('k'), campaignId: null, contractName: null });
+      return of({ ok: true });
     }
 
-    this.store.collaborations.update((list) =>
-      list.map((collaboration) =>
-        collaboration.id === id ? { ...collaboration, ...draft } : collaboration,
-      ),
+    return this.api.createCollaboration(draft).pipe(
+      tap((collaboration) => this.add(collaboration)),
+      map(() => ({ ok: true }) as ActionResult),
+      catchError((error: HttpErrorResponse) => of(apiErrorResult(error))),
     );
-    return { ok: true };
   }
 
-  remove(id: string): ActionResult {
-    this.store.collaborations.update((list) =>
-      list.filter((collaboration) => collaboration.id !== id),
+  update(id: string, draft: CollaborationDraft): Observable<ActionResult> {
+    if (!draft.brandId || !draft.title.trim()) {
+      return of({ ok: false, errorKey: 'collaboration.error.required' });
+    }
+
+    if (!this.store.remote()) {
+      this.replace(id, (collaboration) => ({ ...collaboration, ...draft }));
+      return of({ ok: true });
+    }
+
+    return this.api.updateCollaboration(id, draft).pipe(
+      tap((collaboration) => this.replace(id, () => collaboration)),
+      map(() => ({ ok: true }) as ActionResult),
+      catchError((error: HttpErrorResponse) => of(apiErrorResult(error))),
     );
-    return { ok: true };
+  }
+
+  remove(id: string): Observable<ActionResult> {
+    if (!this.store.remote()) {
+      this.drop(id);
+      return of({ ok: true });
+    }
+
+    return this.api.deleteCollaboration(id).pipe(
+      tap(() => this.drop(id)),
+      map(() => ({ ok: true }) as ActionResult),
+      catchError((error: HttpErrorResponse) => of(apiErrorResult(error))),
+    );
   }
 
   /** Fait avancer la collaboration d'une étape dans le pipeline. */
-  advance(id: string): ActionResult<CollaborationStage> {
+  advance(id: string): Observable<ActionResult<CollaborationStage>> {
     const collaboration = this.byId(id);
     if (!collaboration) {
-      return { ok: false, errorKey: 'collaboration.error.notFound' };
+      return of({ ok: false, errorKey: 'collaboration.error.notFound' });
     }
 
     const index = STAGES.indexOf(collaboration.stage);
     const next = STAGES[Math.min(STAGES.length - 1, index + 1)];
-    this.setStage(id, next);
 
-    return { ok: true, value: next };
+    return this.setStage(id, next).pipe(
+      map<ActionResult, ActionResult<CollaborationStage>>((result) =>
+        result.ok ? { ok: true, value: next } : { ...result, value: undefined },
+      ),
+    );
   }
 
-  markLost(id: string): void {
-    this.setStage(id, 'LOST');
+  markLost(id: string): Observable<ActionResult> {
+    return this.setStage(id, 'LOST');
   }
 
-  setStage(id: string, stage: CollaborationStage): void {
+  setStage(id: string, stage: CollaborationStage): Observable<ActionResult> {
+    if (!this.store.remote()) {
+      this.replace(id, (collaboration) => ({ ...collaboration, stage }));
+      return of({ ok: true });
+    }
+
+    return this.api.changeCollaborationStage(id, stage).pipe(
+      tap((collaboration) => this.replace(id, () => collaboration)),
+      map(() => ({ ok: true }) as ActionResult),
+      catchError((error: HttpErrorResponse) => of(apiErrorResult(error))),
+    );
+  }
+
+  private add(collaboration: Collaboration): void {
+    this.store.collaborations.update((list) => [collaboration, ...list]);
+    this.store.log('COLLABORATION', 'collaborations.flash.created');
+  }
+
+  private replace(id: string, change: (item: Collaboration) => Collaboration): void {
     this.store.collaborations.update((list) =>
       list.map((collaboration) =>
-        collaboration.id === id ? { ...collaboration, stage } : collaboration,
+        collaboration.id === id ? change(collaboration) : collaboration,
       ),
+    );
+  }
+
+  private drop(id: string): void {
+    this.store.collaborations.update((list) =>
+      list.filter((collaboration) => collaboration.id !== id),
     );
   }
 
@@ -194,47 +239,83 @@ export class CollaborationService {
    * Transforme la collaboration en campagne : un premier livrable est créé à
    * partir du montant estimé, prêt à être détaillé.
    */
-  toCampaign(id: string): ActionResult<string> {
+  toCampaign(id: string): Observable<ActionResult<string>> {
     const collaboration = this.byId(id);
     if (!collaboration) {
-      return { ok: false, errorKey: 'collaboration.error.notFound' };
+      return of({ ok: false, errorKey: 'collaboration.error.notFound' });
     }
     if (collaboration.campaignId) {
-      return { ok: false, errorKey: 'collaboration.error.alreadyCampaign' };
+      return of({ ok: false, errorKey: 'collaboration.error.alreadyCampaign' });
     }
 
-    const result = this.campaigns.create({
-      brandId: collaboration.brandId,
-      name: collaboration.title,
-      startDate: today(),
-      endDate: addDays(today(), 30),
-      deliverables: [
-        {
-          id: this.store.newId('l'),
-          description: collaboration.title,
-          deliverableType: collaboration.type === 'UGC' ? 'UGC' : 'POST',
-          quantity: 1,
-          unitPrice: collaboration.estimatedAmount,
-          discountType: 'PERCENT',
-          discountValue: 0,
-          vatRate: DEFAULT_VAT_RATE,
-        },
-      ],
-    });
+    const deliverables: Line[] = [
+      {
+        id: this.store.newId('l'),
+        description: collaboration.title,
+        deliverableType: collaboration.type === 'UGC' ? 'UGC' : 'POST',
+        quantity: 1,
+        unitPrice: collaboration.estimatedAmount,
+        discountType: 'PERCENT',
+        discountValue: 0,
+        vatRate: DEFAULT_VAT_RATE,
+      },
+    ];
+    const startDate = today();
+    const endDate = addDays(startDate, 30);
 
-    if (!result.ok) {
-      return { ok: false, errorKey: result.errorKey, params: result.params };
+    if (!this.store.remote()) {
+      return this.campaigns
+        .create({
+          brandId: collaboration.brandId,
+          name: collaboration.title,
+          startDate,
+          endDate,
+          deliverables,
+        })
+        .pipe(
+          switchMap((result) => {
+            if (!result.ok) {
+              return of({ ok: false, errorKey: result.errorKey, params: result.params });
+            }
+
+            const campaign = this.store.campaigns().find((c) => c.name === collaboration.title);
+            this.link(id, campaign?.id ?? null);
+            return of({ ok: true, value: collaboration.title });
+          }),
+        );
     }
 
-    const campaign = this.store.campaigns().find((c) => c.name === collaboration.title);
-    this.store.collaborations.update((list) =>
-      list.map((item) =>
-        item.id === id
-          ? { ...item, campaignId: campaign?.id ?? null, stage: 'IN_PROGRESS' as CollaborationStage }
-          : item,
-      ),
-    );
+    // Le backend crée la campagne, pose le lien et passe la collaboration en
+    // réalisation : une seule écriture, pas de risque d'état intermédiaire.
+    return this.api
+      .collaborationToCampaign(id, {
+        name: collaboration.title,
+        startDate,
+        endDate,
+        deliverables,
+      })
+      .pipe(
+        tap((campaign) => {
+          this.store.campaigns.update((list) => [campaign, ...list]);
+          this.link(id, campaign.id);
+        }),
+        map(() => ({ ok: true, value: collaboration.title }) as ActionResult<string>),
+        catchError((error: HttpErrorResponse) =>
+          of(
+            apiErrorResult(error, {
+              collaboration_already_campaign: 'collaboration.error.alreadyCampaign',
+            }),
+          ),
+        ),
+      );
+  }
 
-    return { ok: true, value: collaboration.title };
+  /** Rattache la campagne créée et bascule la collaboration en réalisation. */
+  private link(id: string, campaignId: string | null): void {
+    this.replace(id, (collaboration) => ({
+      ...collaboration,
+      campaignId,
+      stage: 'IN_PROGRESS' as CollaborationStage,
+    }));
   }
 }

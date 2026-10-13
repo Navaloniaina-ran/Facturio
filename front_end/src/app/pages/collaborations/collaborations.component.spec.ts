@@ -9,7 +9,7 @@ describe('CollaborationsComponent', () => {
     localStorage.clear();
     await TestBed.configureTestingModule({
       imports: [CollaborationsComponent],
-      providers: [provideRouter([{ path: 'app/campagnes', children: [] }])],
+      providers: [provideRouter([{ path: 'createur/campagnes', children: [] }])],
     }).compileComponents();
     TestBed.inject(I18nService).setLanguage('fr');
   });
@@ -64,8 +64,16 @@ describe('CollaborationsComponent', () => {
     const service = TestBed.inject(CollaborationService);
     const target = service.list().find((item) => item.campaignId === null)!;
 
+    // La carte du pipeline ne garde en clair que « Étape suivante » ;
+    // la conversion en campagne vit dans son menu de débordement.
     const card = cardOf(fixture, target.title);
-    (card.querySelector('[title="Créer la campagne"]') as HTMLButtonElement).click();
+    (card.querySelector('button[aria-haspopup="menu"]') as HTMLButtonElement).click();
+    await fixture.whenStable();
+
+    const entry = [...card.querySelectorAll('.action-menu-item')].find(
+      (item) => item.textContent?.trim() === 'Créer la campagne',
+    ) as HTMLButtonElement;
+    entry.click();
     await fixture.whenStable();
 
     expect(service.byId(target.id)?.campaignId).not.toBeNull();

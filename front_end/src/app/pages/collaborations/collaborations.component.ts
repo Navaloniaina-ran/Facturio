@@ -8,6 +8,13 @@ import { AmountPipe } from '../../shared/amount.pipe';
 import { IconButtonComponent } from '../../shared/icon-button/icon-button.component';
 import { LocalDatePipe } from '../../shared/local-date.pipe';
 import { ModalComponent } from '../../shared/modal/modal.component';
+import { WorkspaceRoutes } from '../../core/workspace-routes';
+import { ICONS } from '../../shared/icons';
+import { PageHeaderComponent } from '../../shared/page-header/page-header.component';
+import {
+  ActionMenuComponent,
+  ActionMenuItem,
+} from '../../shared/action-menu/action-menu.component';
 import {
   COLLABORATION_TYPES,
   CollaborationDraft,
@@ -23,11 +30,22 @@ import {
  */
 @Component({
   selector: 'app-collaborations',
-  imports: [FormsModule, AmountPipe, LocalDatePipe, ModalComponent, IconButtonComponent],
+  imports: [
+    FormsModule,
+    AmountPipe,
+    LocalDatePipe,
+    ModalComponent,
+    IconButtonComponent,
+    PageHeaderComponent,
+    ActionMenuComponent,
+  ],
   templateUrl: './collaborations.component.html',
   styleUrl: './collaborations.component.css',
 })
 export class CollaborationsComponent {
+  protected readonly icons = ICONS;
+
+  private readonly routes = inject(WorkspaceRoutes);
   private readonly store = inject(WorkspaceStore);
   private readonly router = inject(Router);
   protected readonly i18n = inject(I18nService);
@@ -71,52 +89,105 @@ export class CollaborationsComponent {
   }
 
   protected save(): void {
-    const result = this.editedId
-      ? this.service.update(this.editedId, this.form)
+    const edited = this.editedId;
+    const request = edited
+      ? this.service.update(edited, this.form)
       : this.service.create(this.form);
 
-    if (!result.ok) {
-      this.error.set(this.i18n.error(result));
-      return;
-    }
+    request.subscribe((result) => {
+      if (!result.ok) {
+        this.error.set(this.i18n.error(result));
+        return;
+      }
 
-    this.message.set(
-      this.i18n.t(this.editedId ? 'collaborations.flash.updated' : 'collaborations.flash.created'),
-    );
-    this.modal.set(null);
+      this.message.set(
+        this.i18n.t(edited ? 'collaborations.flash.updated' : 'collaborations.flash.created'),
+      );
+      this.modal.set(null);
+    });
   }
 
   protected advance(collaboration: CollaborationView): void {
-    const result = this.service.advance(collaboration.id);
-    this.message.set(
-      result.ok
-        ? this.i18n.t('collaborations.flash.advanced', {
-            stage: this.i18n.stage(result.value ?? collaboration.stage),
-          })
-        : this.i18n.error(result),
-    );
+    this.service.advance(collaboration.id).subscribe((result) => {
+      this.message.set(
+        result.ok
+          ? this.i18n.t('collaborations.flash.advanced', {
+              stage: this.i18n.stage(result.value ?? collaboration.stage),
+            })
+          : this.i18n.error(result),
+      );
+    });
   }
 
   protected markLost(collaboration: CollaborationView): void {
-    this.service.markLost(collaboration.id);
-    this.message.set(this.i18n.t('collaborations.flash.advanced', { stage: this.i18n.stage('LOST') }));
+    this.service.markLost(collaboration.id).subscribe((result) => {
+      this.message.set(
+        result.ok
+          ? this.i18n.t('collaborations.flash.advanced', { stage: this.i18n.stage('LOST') })
+          : this.i18n.error(result),
+      );
+    });
   }
 
   protected toCampaign(collaboration: CollaborationView): void {
-    const result = this.service.toCampaign(collaboration.id);
+    this.service.toCampaign(collaboration.id).subscribe((result) => {
+      if (!result.ok) {
+        this.message.set(this.i18n.error(result));
+        return;
+      }
 
-    if (!result.ok) {
-      this.message.set(this.i18n.error(result));
-      return;
+      this.message.set(this.i18n.t('collaborations.flash.campaign', { name: result.value ?? '' }));
+      void this.router.navigate(this.routes.to('campagnes'));
+    });
+  }
+
+  /**
+   * Actions secondaires d'une collaboration. La carte du pipeline est
+   * étroite : elle ne garde que le geste qui fait avancer l'affaire, le
+   * reste se déplie à la demande.
+   */
+  protected secondaryActions(item: CollaborationView): ActionMenuItem[] {
+    const items: ActionMenuItem[] = [
+      {
+        icon: 'edit',
+        label: this.i18n.t('common.edit'),
+        run: () => this.openEdit(item),
+      },
+    ];
+
+    if (!item.campaignId) {
+      items.push({
+        icon: 'campaigns',
+        tone: 'success',
+        label: this.i18n.t('collaborations.toCampaign'),
+        run: () => this.toCampaign(item),
+      });
     }
 
-    this.message.set(this.i18n.t('collaborations.flash.campaign', { name: result.value ?? '' }));
-    void this.router.navigate(['/app/campagnes']);
+    if (item.stage !== 'DONE') {
+      items.push({
+        icon: 'refuse',
+        label: this.i18n.t('collaborations.markLost'),
+        run: () => this.markLost(item),
+      });
+    }
+
+    items.push({
+      icon: 'delete',
+      tone: 'danger',
+      label: this.i18n.t('common.delete'),
+      run: () => this.remove(item),
+    });
+
+    return items;
   }
 
   protected remove(collaboration: CollaborationView): void {
-    this.service.remove(collaboration.id);
-    this.message.set(this.i18n.t('collaborations.flash.deleted'));
+    this.service.remove(collaboration.id).subscribe((result) => {
+      this.message.set(
+        result.ok ? this.i18n.t('collaborations.flash.deleted') : this.i18n.error(result),
+      );
+    });
   }
 
   protected stageLabel(stage: CollaborationStage): string {
