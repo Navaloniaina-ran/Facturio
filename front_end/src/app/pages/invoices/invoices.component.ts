@@ -1,8 +1,11 @@
 import { Component, computed, inject, signal } from '@angular/core';
+import { firstValueFrom } from 'rxjs';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { DEFAULT_VAT_RATE, today } from '../../core/calculations';
 import { EmailService } from '../../core/email.service';
+import { InvoiceTemplateApi } from '../../core/templates/invoice-template.api';
+import { InvoiceTemplateStore } from '../../core/templates/invoice-template.store';
 import { I18nService } from '../../core/i18n/i18n.service';
 import { InvoiceStatus, Line, PaymentMethod } from '../../core/models';
 import { WorkspaceStore } from '../../core/workspace-store.service';
@@ -12,14 +15,46 @@ import { LineEditorComponent } from '../../shared/line-editor/line-editor.compon
 import { LocalDatePipe } from '../../shared/local-date.pipe';
 import { ModalComponent } from '../../shared/modal/modal.component';
 import { IconButtonComponent } from '../../shared/icon-button/icon-button.component';
+import {
+  ActionMenuComponent,
+  ActionMenuItem,
+} from '../../shared/action-menu/action-menu.component';
 import { StatusBadgeComponent } from '../../shared/status-badge/status-badge.component';
 import { CampaignService } from '../campaigns/campaign.service';
 import { PaymentService } from '../payments/payment.service';
 import { ReminderService } from '../reminders/reminder.service';
 import { InvoiceDraft, InvoiceService, InvoiceView } from './invoice.service';
+import { WorkspaceRoutes } from '../../core/workspace-routes';
+import { ICONS } from '../../shared/icons';
+import { PageHeaderComponent } from '../../shared/page-header/page-header.component';
+import { ViewSwitchComponent } from '../../shared/view-switch/view-switch.component';
+import { SearchFieldComponent } from '../../shared/search-field/search-field.component';
+import {
+  FilterSegment,
+  FilterSegmentsComponent,
+} from '../../shared/filter-segments/filter-segments.component';
+import { FilterChip, ResultBarComponent } from '../../shared/result-bar/result-bar.component';
 
 type Tab = 'ALL' | InvoiceStatus;
 type Modal = 'form' | 'detail' | 'payment' | 'credit' | 'preview' | 'email' | 'delete' | null;
+
+/** Colonne de tri : l'en-tête du tableau et le sélecteur pilotent la même clé. */
+export type InvoiceSort = 'number' | 'brand' | 'issue' | 'due' | 'total' | 'outstanding';
+export type SortDirection = 'asc' | 'desc';
+
+/**
+ * Sens le plus utile à la première ouverture de chaque colonne. Un montant
+ * s'ouvre du plus gros au plus petit ; une échéance, de la plus proche à la
+ * plus lointaine — c'est celle qui presse.
+ */
+const NATURAL_DIRECTION: Record<InvoiceSort, SortDirection> = {
+  number: 'desc',
+  brand: 'asc',
+  issue: 'desc',
+  due: 'asc',
+  total: 'desc',
+  outstanding: 'desc',
+};
 
 const METHODS: PaymentMethod[] = ['TRANSFER', 'MOBILE_MONEY', 'CARD', 'CASH', 'PAYPAL'];
 
@@ -35,15 +70,26 @@ const METHODS: PaymentMethod[] = ['TRANSFER', 'MOBILE_MONEY', 'CARD', 'CASH', 'P
     LineEditorComponent,
     InvoicePreviewComponent,
     IconButtonComponent,
+    PageHeaderComponent,
+    ViewSwitchComponent,
+    SearchFieldComponent,
+    FilterSegmentsComponent,
+    ResultBarComponent,
+    ActionMenuComponent,
   ],
   templateUrl: './invoices.component.html',
 })
 export class InvoicesComponent {
+  protected readonly icons = ICONS;
+
+  protected readonly routes = inject(WorkspaceRoutes);
   private readonly store = inject(WorkspaceStore);
   private readonly route = inject(ActivatedRoute);
   private readonly payments = inject(PaymentService);
   private readonly reminders = inject(ReminderService);
   private readonly emails = inject(EmailService);
+  private readonly templateApi = inject(InvoiceTemplateApi);
+  protected readonly templates = inject(InvoiceTemplateStore);
   protected readonly campaigns = inject(CampaignService);
   protected readonly i18n = inject(I18nService);
   protected readonly service = inject(InvoiceService);
@@ -89,9 +135,27 @@ export class InvoicesComponent {
 
   protected emailDraft = { to: '', subject: '', body: '', withOutstanding: true };
 
+  /** Modèle retenu pour le PDF serveur ; par défaut, celui de l'espace. */
+  protected readonly templateId = signal<string>('');
+
+  protected readonly sortKey = signal<InvoiceSort>('issue');
+  protected readonly sortDirection = signal<SortDirection>('desc');
+  protected readonly view = signal<'table' | 'grid'>('table');
+
+  protected readonly sorts: { key: InvoiceSort; labelKey: string }[] = [
+    { key: 'issue', labelKey: 'invoices.col.issue' },
+    { key: 'due', labelKey: 'invoices.col.due' },
+    { key: 'number', labelKey: 'invoices.col.number' },
+    { key: 'brand', labelKey: 'invoices.col.brand' },
+    { key: 'total', labelKey: 'invoices.col.total' },
+    { key: 'outstanding', labelKey: 'invoices.col.outstanding' },
+  ];
+
   protected readonly filtered = computed(() => {
     const tab = this.tab();
     const term = this.search().trim().toLowerCase();
+    const key = this.sortKey();
+    const direction = this.sortDirection() === 'asc' ? 1 : -1;
 
     return this.service
       .list()
@@ -102,8 +166,78 @@ export class InvoicesComponent {
           invoice.number.toLowerCase().includes(term) ||
           invoice.brandName.toLowerCase().includes(term) ||
           String(invoice.totalInclVat).includes(term),
-      );
+      )
+      .sort((a, b) => this.compare(a, b, key) * direction);
   });
+
+  /** Segments de la barre d'outils : l'effectif est annoncé avant le clic. */
+  protected readonly filterSegments = computed<FilterSegment[]>(() =>
+    this.tabs.map((tab) => ({
+      key: tab,
+      label: this.tabLabel(tab),
+      count: this.countFor(tab),
+    })),
+  );
+
+  protected readonly filterChips = computed<FilterChip[]>(() => {
+    const chips: FilterChip[] = [];
+    const term = this.search().trim();
+
+    if (term) {
+      chips.push({
+        label: this.i18n.t('list.searchChip', { term }),
+        tone: 'brand',
+        clear: () => this.search.set(''),
+      });
+    }
+
+    if (this.tab() !== 'ALL') {
+      chips.push({
+        label: this.tabLabel(this.tab()),
+        clear: () => this.tab.set('ALL'),
+      });
+    }
+
+    return chips;
+  });
+
+  /** Un clic sur un en-tête déjà trié inverse le sens. */
+  protected toggleSort(key: InvoiceSort): void {
+    if (this.sortKey() === key) {
+      this.sortDirection.set(this.sortDirection() === 'asc' ? 'desc' : 'asc');
+      return;
+    }
+    this.setSort(key);
+  }
+
+  protected setSort(key: InvoiceSort): void {
+    this.sortKey.set(key);
+    this.sortDirection.set(NATURAL_DIRECTION[key]);
+  }
+
+  protected ariaSort(key: InvoiceSort): 'ascending' | 'descending' | 'none' {
+    if (this.sortKey() !== key) {
+      return 'none';
+    }
+    return this.sortDirection() === 'asc' ? 'ascending' : 'descending';
+  }
+
+  private compare(a: InvoiceView, b: InvoiceView, key: InvoiceSort): number {
+    switch (key) {
+      case 'brand':
+        return a.brandName.localeCompare(b.brandName);
+      case 'issue':
+        return a.issueDate.localeCompare(b.issueDate);
+      case 'due':
+        return a.dueDate.localeCompare(b.dueDate);
+      case 'total':
+        return a.totalInclVat - b.totalInclVat;
+      case 'outstanding':
+        return a.outstanding - b.outstanding;
+      default:
+        return (a.number || '').localeCompare(b.number || '');
+    }
+  }
 
   protected tabLabel(tab: Tab): string {
     return tab === 'ALL' ? this.i18n.t('common.all') : this.i18n.status(tab);
@@ -116,6 +250,21 @@ export class InvoicesComponent {
   }
 
   // ---------- Création et modification ----------
+
+  protected readonly hasFilters = computed(
+    () => this.tab() !== 'ALL' || this.search().trim().length > 0,
+  );
+
+  /** Une tuile de synthèse réoriente la liste plutôt que de la commenter. */
+  protected focusOn(tab: Tab, sort: InvoiceSort): void {
+    this.tab.set(tab);
+    this.setSort(sort);
+  }
+
+  protected resetFilters(): void {
+    this.tab.set('ALL');
+    this.search.set('');
+  }
 
   protected openCreate(): void {
     this.editedId = null;
@@ -233,6 +382,33 @@ export class InvoicesComponent {
     this.currentId.set(invoice.id);
     this.error.set(null);
     this.modal.set(modal);
+
+    // Les modèles ne sont chargés qu'au moment où l'on en a besoin.
+    if (modal === 'preview' && !this.templates.templates().length) {
+      void this.templates.loadAll().then(() => {
+        this.templateId.set(this.templates.defaultTemplate()?.id ?? '');
+      });
+    }
+  }
+
+  /** Le PDF est produit par le backend, à partir du modèle et de la facture. */
+  protected async downloadPdf(invoice: InvoiceView): Promise<void> {
+    const template = this.templateId() || this.templates.defaultTemplate()?.id;
+    if (!template) {
+      this.message.set(this.i18n.t('templates.pdfUnavailable'));
+      return;
+    }
+
+    try {
+      const blob = await firstValueFrom(this.templateApi.downloadPdf(invoice.id, template));
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `${invoice.number}.pdf`;
+      link.click();
+      URL.revokeObjectURL(link.href);
+    } catch {
+      this.message.set(this.i18n.t('templates.pdfUnavailable'));
+    }
   }
 
   protected openPayment(invoice: InvoiceView): void {
@@ -365,15 +541,79 @@ export class InvoicesComponent {
     }
 
     const result = this.service.remove(invoice.id);
-    this.message.set(
-      result.ok ? this.i18n.t('invoices.flash.deleted') : this.i18n.error(result),
-    );
+    this.message.set(result.ok ? this.i18n.t('invoices.flash.deleted') : this.i18n.error(result));
     this.close();
   }
 
   protected send(invoice: InvoiceView): void {
     this.service.send(invoice.id);
     this.message.set(this.i18n.t('invoices.flash.sent'));
+  }
+
+  /**
+   * Actions secondaires d'une ligne, regroupées dans le menu de débordement.
+   * Seuls l'aperçu, l'envoi, l'encaissement et la relance restent visibles :
+   * ce sont les quatre gestes qu'on fait sans réfléchir depuis la liste.
+   */
+  protected secondaryActions(invoice: InvoiceView): ActionMenuItem[] {
+    const items: ActionMenuItem[] = [
+      {
+        icon: 'details',
+        label: this.i18n.t('invoices.detail.payments'),
+        run: () => this.open(invoice, 'detail'),
+      },
+    ];
+
+    if (invoice.editable) {
+      items.push({
+        icon: 'edit',
+        tone: 'brand',
+        label: this.i18n.t('invoices.edit'),
+        run: () => this.openEdit(invoice),
+      });
+    }
+
+    if (invoice.status !== 'DRAFT' && invoice.status !== 'CANCELLED') {
+      items.push({
+        icon: 'mail',
+        tone: 'brand',
+        label: this.i18n.t('email.send'),
+        run: () => this.openEmail(invoice),
+      });
+    }
+
+    items.push({
+      icon: 'duplicate',
+      label: this.i18n.t('common.duplicate'),
+      run: () => this.duplicate(invoice),
+    });
+
+    if (invoice.status !== 'DRAFT') {
+      items.push({
+        icon: 'xml',
+        label: this.i18n.t('facturx.exportXml'),
+        run: () => void this.exportFacturXXml(invoice),
+      });
+    }
+
+    if (invoice.status !== 'CANCELLED' && invoice.status !== 'DRAFT') {
+      items.push({
+        icon: 'creditNote',
+        label: this.i18n.t('invoices.credit'),
+        run: () => this.open(invoice, 'credit'),
+      });
+    }
+
+    if (invoice.editable) {
+      items.push({
+        icon: 'delete',
+        tone: 'danger',
+        label: this.i18n.t('common.delete'),
+        run: () => this.open(invoice, 'delete'),
+      });
+    }
+
+    return items;
   }
 
   protected duplicate(invoice: InvoiceView): void {
@@ -385,6 +625,41 @@ export class InvoicesComponent {
     this.service.cancel(invoice.id);
     this.message.set(this.i18n.t('invoices.flash.cancelled', { number: invoice.number }));
   }
+
+  /**
+   * Export du XML Factur-X (EN 16931, syntaxe CII). L'assemblage du PDF/A-3
+   * qui embarque ce fichier est réalisé par le moteur PDF côté serveur.
+   */
+  protected async exportFacturXXml(invoice: InvoiceView): Promise<void> {
+    try {
+      const blob = await firstValueFrom(this.templateApi.downloadFacturXXml(invoice.id));
+      this.download(blob, `${invoice.number}-factur-x.xml`);
+      this.message.set(this.i18n.t('facturx.flash.exported', { profile: this.profileLabel }));
+    } catch {
+      this.message.set(this.i18n.t('templates.pdfUnavailable'));
+    }
+  }
+
+  protected async exportFacturXPdf(invoice: InvoiceView): Promise<void> {
+    try {
+      const blob = await firstValueFrom(this.templateApi.downloadFacturXPdf(invoice.id));
+      this.download(blob, `${invoice.number}-factur-x.pdf`);
+      this.message.set(this.i18n.t('facturx.flash.exported', { profile: this.profileLabel }));
+    } catch {
+      this.message.set(this.i18n.t('templates.pdfUnavailable'));
+    }
+  }
+
+  private download(blob: Blob, filename: string): void {
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = filename;
+    link.click();
+    URL.revokeObjectURL(link.href);
+  }
+
+  /** Dernier segment du profil, seul lisible dans un message. */
+  protected readonly profileLabel = 'EN16931';
 
   protected paymentsOf(invoiceId: string) {
     return this.payments.forInvoice(invoiceId);

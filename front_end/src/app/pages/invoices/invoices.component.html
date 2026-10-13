@@ -1,187 +1,445 @@
 <div class="space-y-5">
-  <!-- En-tête -->
-  <div class="page-head">
-    <div>
-      <h1 class="page-title">{{ i18n.vocab('invoices') }}</h1>
-      <p class="page-subtitle">
-        {{ i18n.t('invoices.subtitle', { count: service.list().length, overdue: service.overdue().length }) }}
-      </p>
-    </div>
-    <button type="button" class="btn-primary" (click)="openCreate()">{{ i18n.t('invoices.new') }}</button>
-  </div>
+  <app-page-header
+    icon="invoices"
+    [title]="i18n.vocab('invoices')"
+    [subtitle]="
+      i18n.t('invoices.subtitle', {
+        count: service.list().length,
+        overdue: service.overdue().length,
+      })
+    "
+  >
+    <button type="button" class="btn-primary cursor-pointer" (click)="openCreate()">
+      <svg viewBox="0 0 24 24" class="size-4 fill-current" aria-hidden="true">
+        <path d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6V5z" />
+      </svg>
+      {{ i18n.t('invoices.new') }}
+    </button>
+  </app-page-header>
 
-  <!-- Synthèse -->
-  <div class="grid gap-3 sm:grid-cols-4">
-    <div class="card p-4">
-      <p class="stat-label">{{ i18n.t('invoices.sum.invoiced') }}</p>
-      <p class="stat-value">{{ service.revenue() | amount }}</p>
-    </div>
-    <div class="card p-4">
-      <p class="stat-label">{{ i18n.t('kpi.collected') }}</p>
-      <p class="stat-value text-emerald-600">{{ service.collected() | amount }}</p>
-    </div>
-    <div class="card p-4">
-      <p class="stat-label">{{ i18n.t('kpi.pending') }}</p>
-      <p class="stat-value text-amber-600">{{ service.pending() | amount }}</p>
-    </div>
-    <div class="card p-4">
-      <p class="stat-label">{{ i18n.t('kpi.overdue') }}</p>
-      <p class="stat-value text-rose-600">{{ service.overdueAmount() | amount }}</p>
-    </div>
-  </div>
+  <!--
+    Synthèse. Chaque tuile réoriente la liste au lieu de la commenter :
+    « en retard » n'est pas un chiffre à lire, c'est un filtre à ouvrir.
+  -->
+  <section class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+    <button
+      type="button"
+      class="card card-interactive relative cursor-pointer overflow-hidden p-4 text-left"
+      [class]="sortKey() === 'total' && tab() === 'ALL' ? 'ring-2 ring-brand-500' : ''"
+      [attr.aria-pressed]="sortKey() === 'total' && tab() === 'ALL'"
+      (click)="focusOn('ALL', 'total')"
+    >
+      <span
+        class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-brand-500 to-brand-700"
+        aria-hidden="true"
+      ></span>
+      <p class="stat-label font-semibold uppercase">{{ i18n.t('invoices.sum.invoiced') }}</p>
+      <p class="stat-value text-2xl">{{ service.revenue() | amount }}</p>
+    </button>
+
+    <button
+      type="button"
+      class="card card-interactive relative cursor-pointer overflow-hidden p-4 text-left"
+      [class]="tab() === 'PAID' ? 'ring-2 ring-emerald-500' : ''"
+      [attr.aria-pressed]="tab() === 'PAID'"
+      (click)="focusOn('PAID', 'issue')"
+    >
+      <span
+        class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-emerald-400 to-emerald-600"
+        aria-hidden="true"
+      ></span>
+      <p class="stat-label font-semibold uppercase">{{ i18n.t('kpi.collected') }}</p>
+      <p class="stat-value text-2xl text-emerald-600">{{ service.collected() | amount }}</p>
+    </button>
+
+    <button
+      type="button"
+      class="card card-interactive relative cursor-pointer overflow-hidden p-4 text-left"
+      [class]="tab() === 'SENT' ? 'ring-2 ring-amber-500' : ''"
+      [attr.aria-pressed]="tab() === 'SENT'"
+      (click)="focusOn('SENT', 'due')"
+    >
+      <span
+        class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-amber-400 to-amber-600"
+        aria-hidden="true"
+      ></span>
+      <p class="stat-label font-semibold uppercase">{{ i18n.t('kpi.pending') }}</p>
+      <p class="stat-value text-2xl text-amber-600">{{ service.pending() | amount }}</p>
+    </button>
+
+    <button
+      type="button"
+      class="card card-interactive relative cursor-pointer overflow-hidden p-4 text-left"
+      [class]="tab() === 'OVERDUE' ? 'ring-2 ring-rose-500' : ''"
+      [attr.aria-pressed]="tab() === 'OVERDUE'"
+      (click)="focusOn('OVERDUE', 'due')"
+    >
+      <span
+        class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-rose-400 to-rose-600"
+        aria-hidden="true"
+      ></span>
+      <p class="stat-label font-semibold uppercase">{{ i18n.t('kpi.overdue') }}</p>
+      <p class="stat-value text-2xl text-rose-600">{{ service.overdueAmount() | amount }}</p>
+    </button>
+  </section>
 
   @if (message()) {
-    <p class="flash">{{ message() }}</p>
+    <p class="flash" role="status">{{ message() }}</p>
   }
 
-  <!-- Filtres -->
-  <div class="flex flex-wrap items-center gap-2">
-    @for (item of tabs; track item) {
-      <button type="button" class="chip" [class.chip-active]="tab() === item" (click)="tab.set(item)">
-        {{ tabLabel(item) }}
-        <span class="num opacity-60">{{ countFor(item) }}</span>
-      </button>
-    }
-    <input
-      class="field ml-auto max-w-xs"
-      type="search"
-      name="search"
-      [placeholder]="i18n.t('invoices.searchPlaceholder')"
-      [attr.aria-label]="i18n.t('invoices.searchLabel')"
-      [ngModel]="search()"
-      (ngModelChange)="search.set($event)"
-    />
-  </div>
+  <!-- Barre d'outils : recherche, segments chiffrés, tri, affichage -->
+  <section class="card p-3 sm:p-4">
+    <div class="flex flex-wrap items-center gap-3">
+      <app-search-field
+        [value]="search()"
+        [placeholder]="i18n.t('invoices.searchPlaceholder')"
+        [label]="i18n.t('invoices.searchLabel')"
+        [shortcut]="!modal()"
+        (valueChange)="search.set($event)"
+      />
 
-  <!-- Liste -->
-  <div class="card overflow-hidden">
-    <div class="overflow-x-auto">
-      <table class="w-full min-w-[64rem]">
-        <thead class="bg-slate-50/80">
-          <tr>
-            <th class="th-cell">{{ i18n.t('invoices.col.number') }}</th>
-            <th class="th-cell">{{ i18n.t('invoices.col.brand') }}</th>
-            <th class="th-cell">{{ i18n.t('invoices.col.issue') }}</th>
-            <th class="th-cell">{{ i18n.t('invoices.col.due') }}</th>
-            <th class="th-cell text-right">{{ i18n.t('invoices.col.total') }}</th>
-            <th class="th-cell text-right">{{ i18n.t('invoices.col.paid') }}</th>
-            <th class="th-cell text-right">{{ i18n.t('invoices.col.outstanding') }}</th>
-            <th class="th-cell">{{ i18n.t('quotes.col.status') }}</th>
-            <th class="th-cell text-right">{{ i18n.t('brands.col.actions') }}</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-slate-100">
-          @for (invoice of filtered(); track invoice.id) {
-            <tr class="hover:bg-slate-50/70">
-              <td class="td-cell">
+      <app-filter-segments
+        [segments]="filterSegments()"
+        [active]="tab()"
+        [label]="i18n.t('list.filterLabel')"
+        (select)="tab.set($any($event))"
+      />
+
+      <div class="ml-auto flex items-center gap-2">
+        <label class="sr-only" for="invoice-sort">{{ i18n.t('brands.sort.label') }}</label>
+        <select
+          id="invoice-sort"
+          name="invoice-sort"
+          class="field h-11 w-auto cursor-pointer py-0"
+          [ngModel]="sortKey()"
+          (ngModelChange)="setSort($event)"
+        >
+          @for (option of sorts; track option.key) {
+            <option [value]="option.key">{{ i18n.t(option.labelKey) }}</option>
+          }
+        </select>
+
+        <app-view-switch [value]="view()" (valueChange)="view.set($event)" />
+      </div>
+    </div>
+
+    <app-result-bar
+      [count]="filtered().length"
+      [total]="service.list().length"
+      [chips]="filterChips()"
+      (reset)="resetFilters()"
+    />
+  </section>
+
+  <!-- Liste : rien à montrer, tableau dense, ou cartes -->
+  @if (!filtered().length) {
+    <div class="card p-6">
+      <div class="empty-state">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path [attr.d]="icons.inbox" />
+        </svg>
+        @if (hasFilters()) {
+          <p class="empty-state-title">{{ i18n.t('list.noResult.title') }}</p>
+          <p>{{ i18n.t('list.noResult.hint') }}</p>
+          <button type="button" class="btn-secondary" (click)="resetFilters()">
+            {{ i18n.t('common.resetFilters') }}
+          </button>
+        } @else {
+          <p class="empty-state-title">{{ i18n.t('invoices.empty.title') }}</p>
+          <p>{{ i18n.t('invoices.empty.hint') }}</p>
+          <button type="button" class="btn-primary" (click)="openCreate()">
+            {{ i18n.t('invoices.new') }}
+          </button>
+        }
+      </div>
+    </div>
+  } @else if (view() === 'table') {
+    <div class="card overflow-hidden">
+      <div class="table-wrap">
+        <!-- La colonne d'actions ayant fondu, le tableau tient dans 54rem. -->
+        <table class="w-full min-w-[54rem]">
+          <thead class="bg-slate-50/80">
+            <tr>
+              <th class="th-cell" scope="col" [attr.aria-sort]="ariaSort('number')">
                 <button
                   type="button"
-                  class="font-semibold text-slate-900 hover:text-brand-600"
-                  (click)="open(invoice, 'preview')"
+                  class="th-sort"
+                  [attr.aria-pressed]="sortKey() === 'number'"
+                  (click)="toggleSort('number')"
                 >
-                  {{ invoice.number || i18n.t('common.draft') }}
+                  {{ i18n.t('invoices.col.number') }}
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path
+                      [attr.d]="
+                        sortKey() === 'number' && sortDirection() === 'asc'
+                          ? icons.sortAsc
+                          : icons.sortDesc
+                      "
+                    />
+                  </svg>
                 </button>
-                @if (invoice.campaignName) {
-                  <p class="text-xs text-slate-500">{{ invoice.campaignName }}</p>
-                }
-              </td>
-              <td class="td-cell">{{ invoice.brandName }}</td>
-              <td class="td-cell text-slate-500">{{ invoice.issueDate | localDate }}</td>
-              <td class="td-cell text-slate-500">{{ invoice.dueDate | localDate }}</td>
-              <td class="td-cell num text-right font-semibold text-slate-900">{{ invoice.totalInclVat | amount }}</td>
-              <td class="td-cell num text-right text-emerald-600">{{ invoice.paidAmount | amount }}</td>
-              <td
-                class="td-cell num text-right font-semibold"
-                [class]="invoice.outstanding > 0 ? 'text-slate-900' : 'text-slate-400'"
+              </th>
+              <th class="th-cell" scope="col" [attr.aria-sort]="ariaSort('brand')">
+                <button
+                  type="button"
+                  class="th-sort"
+                  [attr.aria-pressed]="sortKey() === 'brand'"
+                  (click)="toggleSort('brand')"
+                >
+                  {{ i18n.t('invoices.col.brand') }}
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path
+                      [attr.d]="
+                        sortKey() === 'brand' && sortDirection() === 'asc'
+                          ? icons.sortAsc
+                          : icons.sortDesc
+                      "
+                    />
+                  </svg>
+                </button>
+              </th>
+              <th class="th-cell" scope="col" [attr.aria-sort]="ariaSort('issue')">
+                <button
+                  type="button"
+                  class="th-sort"
+                  [attr.aria-pressed]="sortKey() === 'issue'"
+                  (click)="toggleSort('issue')"
+                >
+                  {{ i18n.t('invoices.col.issue') }}
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path
+                      [attr.d]="
+                        sortKey() === 'issue' && sortDirection() === 'asc'
+                          ? icons.sortAsc
+                          : icons.sortDesc
+                      "
+                    />
+                  </svg>
+                </button>
+              </th>
+              <th class="th-cell" scope="col" [attr.aria-sort]="ariaSort('due')">
+                <button
+                  type="button"
+                  class="th-sort"
+                  [attr.aria-pressed]="sortKey() === 'due'"
+                  (click)="toggleSort('due')"
+                >
+                  {{ i18n.t('invoices.col.due') }}
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path
+                      [attr.d]="
+                        sortKey() === 'due' && sortDirection() === 'asc'
+                          ? icons.sortAsc
+                          : icons.sortDesc
+                      "
+                    />
+                  </svg>
+                </button>
+              </th>
+              <th class="th-cell text-right" scope="col" [attr.aria-sort]="ariaSort('total')">
+                <button
+                  type="button"
+                  class="th-sort justify-end"
+                  [attr.aria-pressed]="sortKey() === 'total'"
+                  (click)="toggleSort('total')"
+                >
+                  {{ i18n.t('invoices.col.total') }}
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path
+                      [attr.d]="
+                        sortKey() === 'total' && sortDirection() === 'asc'
+                          ? icons.sortAsc
+                          : icons.sortDesc
+                      "
+                    />
+                  </svg>
+                </button>
+              </th>
+              <th class="th-cell text-right">{{ i18n.t('invoices.col.paid') }}</th>
+              <th class="th-cell text-right" scope="col" [attr.aria-sort]="ariaSort('outstanding')">
+                <button
+                  type="button"
+                  class="th-sort justify-end"
+                  [attr.aria-pressed]="sortKey() === 'outstanding'"
+                  (click)="toggleSort('outstanding')"
+                >
+                  {{ i18n.t('invoices.col.outstanding') }}
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path
+                      [attr.d]="
+                        sortKey() === 'outstanding' && sortDirection() === 'asc'
+                          ? icons.sortAsc
+                          : icons.sortDesc
+                      "
+                    />
+                  </svg>
+                </button>
+              </th>
+              <th class="th-cell">{{ i18n.t('quotes.col.status') }}</th>
+              <th class="th-cell text-right">{{ i18n.t('brands.col.actions') }}</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            @for (invoice of filtered(); track invoice.id) {
+              <tr class="hover:bg-slate-50/70">
+                <td class="td-cell">
+                  <button
+                    type="button"
+                    class="font-semibold text-slate-900 hover:text-brand-600"
+                    (click)="open(invoice, 'preview')"
+                  >
+                    {{ invoice.number || i18n.t('common.draft') }}
+                  </button>
+                  @if (invoice.campaignName) {
+                    <p class="text-xs text-slate-500">{{ invoice.campaignName }}</p>
+                  }
+                </td>
+                <td class="td-cell">{{ invoice.brandName }}</td>
+                <td class="td-cell text-slate-500">{{ invoice.issueDate | localDate }}</td>
+                <td class="td-cell text-slate-500">{{ invoice.dueDate | localDate }}</td>
+                <td class="td-cell num text-right font-semibold text-slate-900">
+                  {{ invoice.totalInclVat | amount }}
+                </td>
+                <td class="td-cell num text-right text-emerald-600">
+                  {{ invoice.paidAmount | amount }}
+                </td>
+                <td
+                  class="td-cell num text-right font-semibold"
+                  [class]="invoice.outstanding > 0 ? 'text-slate-900' : 'text-slate-400'"
+                >
+                  {{ invoice.outstanding | amount }}
+                </td>
+                <td class="td-cell">
+                  <app-status-badge
+                    [status]="invoice.status"
+                    [extra]="
+                      invoice.daysOverdue ? invoice.daysOverdue + ' ' + i18n.t('common.days') : null
+                    "
+                  />
+                </td>
+                <td class="td-cell">
+                  <div class="flex items-center justify-end gap-0.5">
+                    <app-icon-button
+                      icon="view"
+                      [label]="i18n.t('preview.open')"
+                      (action)="open(invoice, 'preview')"
+                    />
+                    @if (invoice.editable) {
+                      <app-icon-button
+                        icon="send"
+                        tone="brand"
+                        [label]="i18n.t('invoices.validateAndSend')"
+                        (action)="send(invoice)"
+                      />
+                    }
+                    @if (
+                      invoice.outstanding > 0 &&
+                      invoice.status !== 'DRAFT' &&
+                      invoice.status !== 'CANCELLED'
+                    ) {
+                      <app-icon-button
+                        icon="payment"
+                        tone="success"
+                        [label]="i18n.t('invoices.payment')"
+                        (action)="openPayment(invoice)"
+                      />
+                    }
+                    @if (invoice.status === 'OVERDUE') {
+                      <app-icon-button
+                        icon="remind"
+                        tone="danger"
+                        [link]="routes.url('relances')"
+                        [label]="i18n.t('dashboard.remind')"
+                      />
+                    }
+
+                    <app-action-menu [items]="secondaryActions(invoice)" />
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  } @else {
+    <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+      @for (invoice of filtered(); track invoice.id) {
+        <article class="card flex flex-col p-4">
+          <div class="flex items-start justify-between gap-3">
+            <div class="min-w-0">
+              <button
+                type="button"
+                class="truncate text-left text-sm font-semibold text-slate-900 hover:text-brand-600"
+                (click)="open(invoice, 'preview')"
+              >
+                {{ invoice.number || i18n.t('common.draft') }}
+              </button>
+              <p class="truncate text-xs text-slate-500">{{ invoice.brandName }}</p>
+            </div>
+            <app-status-badge
+              [status]="invoice.status"
+              [extra]="
+                invoice.daysOverdue ? invoice.daysOverdue + ' ' + i18n.t('common.days') : null
+              "
+            />
+          </div>
+
+          <dl class="mt-4 grid grid-cols-2 gap-3">
+            <div class="rounded-xl bg-slate-50 p-3">
+              <dt class="stat-label">{{ i18n.t('invoices.col.total') }}</dt>
+              <dd class="num mt-1 text-sm font-semibold text-slate-900">
+                {{ invoice.totalInclVat | amount }}
+              </dd>
+            </div>
+            <div class="rounded-xl bg-slate-50 p-3">
+              <dt class="stat-label">{{ i18n.t('invoices.col.outstanding') }}</dt>
+              <dd
+                class="num mt-1 text-sm font-semibold"
+                [class]="invoice.outstanding > 0 ? 'text-rose-600' : 'text-slate-500'"
               >
                 {{ invoice.outstanding | amount }}
-              </td>
-              <td class="td-cell">
-                <app-status-badge
-                  [status]="invoice.status"
-                  [extra]="invoice.daysOverdue ? invoice.daysOverdue + ' ' + i18n.t('common.days') : null"
+              </dd>
+            </div>
+          </dl>
+
+          <div class="mt-4 flex items-center justify-between gap-2 border-t border-slate-100 pt-3">
+            <span class="text-xs text-slate-500">
+              {{ i18n.t('invoices.col.due') }} · {{ invoice.dueDate | localDate }}
+            </span>
+            <div class="flex items-center gap-0.5">
+              <app-icon-button
+                icon="view"
+                [label]="i18n.t('preview.open')"
+                (action)="open(invoice, 'preview')"
+              />
+              @if (invoice.editable) {
+                <app-icon-button
+                  icon="send"
+                  tone="brand"
+                  [label]="i18n.t('invoices.validateAndSend')"
+                  (action)="send(invoice)"
                 />
-              </td>
-              <td class="td-cell">
-                <div class="flex items-center justify-end gap-0.5">
-                  <app-icon-button
-                    icon="view"
-                    [label]="i18n.t('preview.open')"
-                    (action)="open(invoice, 'preview')"
-                  />
-                  <app-icon-button
-                    icon="details"
-                    [label]="i18n.t('invoices.detail.payments')"
-                    (action)="open(invoice, 'detail')"
-                  />
-                  @if (invoice.editable) {
-                    <app-icon-button
-                      icon="edit"
-                      tone="brand"
-                      [label]="i18n.t('invoices.edit')"
-                      (action)="openEdit(invoice)"
-                    />
-                    <app-icon-button
-                      icon="send"
-                      tone="brand"
-                      [label]="i18n.t('invoices.validateAndSend')"
-                      (action)="send(invoice)"
-                    />
-                    <app-icon-button
-                      icon="delete"
-                      tone="danger"
-                      [label]="i18n.t('common.delete')"
-                      (action)="open(invoice, 'delete')"
-                    />
-                  }
-                  @if (invoice.status !== 'DRAFT' && invoice.status !== 'CANCELLED') {
-                    <app-icon-button
-                      icon="mail"
-                      tone="brand"
-                      [label]="i18n.t('email.send')"
-                      (action)="openEmail(invoice)"
-                    />
-                  }
-                  @if (invoice.outstanding > 0 && invoice.status !== 'DRAFT' && invoice.status !== 'CANCELLED') {
-                    <app-icon-button
-                      icon="payment"
-                      tone="success"
-                      [label]="i18n.t('invoices.payment')"
-                      (action)="openPayment(invoice)"
-                    />
-                  }
-                  @if (invoice.status === 'OVERDUE') {
-                    <app-icon-button
-                      icon="remind"
-                      tone="danger"
-                      link="/app/relances"
-                      [label]="i18n.t('dashboard.remind')"
-                    />
-                  }
-                  <app-icon-button
-                    icon="duplicate"
-                    [label]="i18n.t('common.duplicate')"
-                    (action)="duplicate(invoice)"
-                  />
-                  @if (invoice.status !== 'CANCELLED' && invoice.status !== 'DRAFT') {
-                    <app-icon-button
-                      icon="creditNote"
-                      [label]="i18n.t('invoices.credit')"
-                      (action)="open(invoice, 'credit')"
-                    />
-                  }
-                </div>
-              </td>
-            </tr>
-          } @empty {
-            <tr>
-              <td class="td-cell text-slate-500" colspan="9">{{ i18n.t('invoices.empty') }}</td>
-            </tr>
-          }
-        </tbody>
-      </table>
+              }
+              @if (
+                invoice.outstanding > 0 &&
+                invoice.status !== 'DRAFT' &&
+                invoice.status !== 'CANCELLED'
+              ) {
+                <app-icon-button
+                  icon="payment"
+                  tone="success"
+                  [label]="i18n.t('invoices.payment')"
+                  (action)="openPayment(invoice)"
+                />
+              }
+              <app-action-menu [items]="secondaryActions(invoice)" />
+            </div>
+          </div>
+        </article>
+      }
     </div>
-  </div>
+  }
 </div>
 
 <!-- Création et modification -->
@@ -196,15 +454,29 @@
     [wide]="true"
     (closed)="close()"
   >
-    <form class="space-y-6" (ngSubmit)="save(false)">
+    <form
+      class="space-y-6"
+      novalidate
+      #invoiceForm="ngForm"
+      (ngSubmit)="invoiceForm.valid && save(false)"
+    >
       <div class="grid gap-4 sm:grid-cols-2">
         <div>
           <label class="field-label" for="brand">{{ i18n.t('invoices.form.brand') }}</label>
-          <select id="brand" name="brand" class="field" [(ngModel)]="draft.brandId" (ngModelChange)="refreshDueDate()">
+          <select
+            id="brand"
+            name="brand"
+            class="field"
+            required
+            [(ngModel)]="draft.brandId"
+            (ngModelChange)="refreshDueDate()"
+          >
+            <option value="">{{ i18n.t('form.requiredSelect') }}</option>
             @for (brand of brands(); track brand.id) {
               <option [value]="brand.id">{{ brand.name }}</option>
             }
           </select>
+          <p class="field-error">{{ i18n.t('invoice.error.brand') }}</p>
         </div>
         <div>
           <label class="field-label" for="campaign">{{ i18n.t('invoices.form.campaign') }}</label>
@@ -225,17 +497,35 @@
             name="issueDate"
             type="date"
             class="field"
+            required
             [(ngModel)]="draft.issueDate"
             (ngModelChange)="refreshDueDate()"
           />
+          <p class="field-error">{{ i18n.t('form.required') }}</p>
         </div>
         <div>
           <label class="field-label" for="dueDate">{{ i18n.t('invoices.form.due') }}</label>
-          <input id="dueDate" name="dueDate" type="date" class="field" [(ngModel)]="draft.dueDate" />
+          <input
+            id="dueDate"
+            name="dueDate"
+            type="date"
+            class="field"
+            [(ngModel)]="draft.dueDate"
+            required
+          />
+          <p class="field-error">{{ i18n.t('form.required') }}</p>
         </div>
         <div>
           <label class="field-label" for="deposit">{{ i18n.t('invoices.form.deposit') }}</label>
-          <input id="deposit" name="deposit" type="number" min="0" max="100" class="field" [(ngModel)]="draft.depositPercent" />
+          <input
+            id="deposit"
+            name="deposit"
+            type="number"
+            min="0"
+            max="100"
+            class="field"
+            [(ngModel)]="draft.depositPercent"
+          />
         </div>
       </div>
 
@@ -251,14 +541,25 @@
 
       <div>
         <label class="field-label" for="terms">{{ i18n.t('invoices.form.terms') }}</label>
-        <textarea id="terms" name="terms" rows="2" class="field" [(ngModel)]="draft.terms"></textarea>
+        <textarea
+          id="terms"
+          name="terms"
+          rows="2"
+          class="field"
+          [(ngModel)]="draft.terms"
+        ></textarea>
       </div>
+
+      @if (invoiceForm.submitted && invoiceForm.invalid) {
+        <p class="alert-error" role="alert">{{ i18n.t('form.incomplete') }}</p>
+      }
 
       @if (error()) {
         <p class="alert-error" role="alert">{{ error() }}</p>
       }
 
-      <div class="flex flex-wrap justify-end gap-3">
+      <div class="flex flex-wrap items-center justify-end gap-3">
+        <p class="field-required-note mr-auto">{{ i18n.t('form.requiredNote') }}</p>
         <button type="button" class="btn-secondary" (click)="save(true)">
           {{ i18n.t('invoices.form.saveDraft') }}
         </button>
@@ -278,7 +579,38 @@
   >
     <app-invoice-preview [invoice]="invoice" />
 
-    <div class="no-print mt-5 flex flex-wrap justify-end gap-3 border-t border-slate-100 pt-4">
+    <div class="no-print mt-5 flex flex-wrap items-center gap-3 border-t border-slate-100 pt-4">
+      <p class="mr-auto text-xs text-slate-500">
+        {{ i18n.t('facturx.hint', { profile: profileLabel }) }}
+      </p>
+
+      <!-- Modèle appliqué au PDF produit par le backend -->
+      @if (templates.templates().length) {
+        <label class="flex items-center gap-2 text-xs text-slate-600">
+          {{ i18n.t('templates.selectForInvoice') }}
+          <select
+            class="field w-auto py-1.5 text-xs"
+            name="templateId"
+            [ngModel]="templateId()"
+            (ngModelChange)="templateId.set($event)"
+          >
+            @for (template of templates.templates(); track template.id) {
+              <option [value]="template.id">{{ template.name }}</option>
+            }
+          </select>
+        </label>
+        <button type="button" class="btn-secondary" (click)="downloadPdf(invoice)">
+          {{ i18n.t('templates.downloadPdf') }}
+        </button>
+      }
+      @if (invoice.status !== 'DRAFT') {
+        <button type="button" class="btn-secondary" (click)="exportFacturXXml(invoice)">
+          {{ i18n.t('facturx.exportXml') }}
+        </button>
+        <button type="button" class="btn-secondary" (click)="exportFacturXPdf(invoice)">
+          {{ i18n.t('facturx.exportPdf') }}
+        </button>
+      }
       @if (invoice.editable) {
         <button type="button" class="btn-secondary" (click)="openEdit(invoice)">
           {{ i18n.t('invoices.edit') }}
@@ -369,7 +701,9 @@
       </dl>
 
       <section>
-        <h3 class="text-sm font-semibold text-slate-900">{{ i18n.t('invoices.detail.payments') }}</h3>
+        <h3 class="card-title">
+          {{ i18n.t('invoices.detail.payments') }}
+        </h3>
         <ul class="mt-2 divide-y divide-slate-100 text-sm">
           @for (payment of paymentsOf(invoice.id); track payment.id) {
             <li class="flex justify-between py-2">
@@ -385,7 +719,9 @@
       </section>
 
       <section>
-        <h3 class="text-sm font-semibold text-slate-900">{{ i18n.t('invoices.detail.reminders') }}</h3>
+        <h3 class="card-title">
+          {{ i18n.t('invoices.detail.reminders') }}
+        </h3>
         <ul class="mt-2 divide-y divide-slate-100 text-sm">
           @for (reminder of remindersOf(invoice.id); track reminder.id) {
             <li class="flex justify-between gap-3 py-2">
@@ -399,12 +735,12 @@
       </section>
 
       <section>
-        <h3 class="text-sm font-semibold text-slate-900">{{ i18n.t('email.history') }}</h3>
+        <h3 class="card-title">{{ i18n.t('email.history') }}</h3>
         <ul class="mt-2 divide-y divide-slate-100 text-sm">
           @for (email of emailsOf(invoice.id); track email.id) {
             <li class="flex justify-between gap-3 py-2">
               <span class="truncate text-slate-600">{{ email.to }}</span>
-              <span class="shrink-0 text-xs text-slate-400">{{ email.sentAt | localDate }}</span>
+              <span class="shrink-0 text-xs text-slate-500">{{ email.sentAt | localDate }}</span>
             </li>
           } @empty {
             <li class="py-2 text-slate-500">{{ i18n.t('email.noHistory') }}</li>
@@ -426,7 +762,9 @@
         </div>
 
         <div class="flex flex-wrap justify-end gap-3 border-t border-slate-100 pt-4">
-          <button type="button" class="btn-secondary" (click)="close()">{{ i18n.t('common.cancel') }}</button>
+          <button type="button" class="btn-secondary" (click)="close()">
+            {{ i18n.t('common.cancel') }}
+          </button>
           <button type="button" class="btn-primary" (click)="confirmCredit()">
             {{ i18n.t('invoices.credit.confirm') }}
           </button>
@@ -447,7 +785,9 @@
       <p class="alert-warning">{{ i18n.t('invoices.deleteWarning') }}</p>
 
       <div class="flex justify-end gap-3">
-        <button type="button" class="btn-secondary" (click)="close()">{{ i18n.t('common.cancel') }}</button>
+        <button type="button" class="btn-secondary" (click)="close()">
+          {{ i18n.t('common.cancel') }}
+        </button>
         <button type="button" class="btn-danger" (click)="confirmDelete()">
           {{ i18n.t('common.confirmDelete') }}
         </button>
@@ -464,15 +804,35 @@
     [wide]="true"
     (closed)="close()"
   >
-    <form class="space-y-5" (ngSubmit)="sendEmail()">
+    <form
+      class="space-y-5"
+      novalidate
+      #emailForm="ngForm"
+      (ngSubmit)="emailForm.valid && sendEmail()"
+    >
       <div>
         <label class="field-label" for="emailTo">{{ i18n.t('email.to') }}</label>
-        <input id="emailTo" name="emailTo" type="email" class="field" [(ngModel)]="emailDraft.to" />
+        <input
+          id="emailTo"
+          name="emailTo"
+          type="email"
+          class="field"
+          [(ngModel)]="emailDraft.to"
+          required
+        />
+        <p class="field-error">{{ i18n.t('email.error.recipient') }}</p>
       </div>
 
       <div>
         <label class="field-label" for="emailSubject">{{ i18n.t('email.subject') }}</label>
-        <input id="emailSubject" name="emailSubject" class="field" [(ngModel)]="emailDraft.subject" />
+        <input
+          id="emailSubject"
+          name="emailSubject"
+          class="field"
+          [(ngModel)]="emailDraft.subject"
+          required
+        />
+        <p class="field-error">{{ i18n.t('form.required') }}</p>
       </div>
 
       <label class="flex items-center gap-3 text-sm text-slate-600">
@@ -488,15 +848,30 @@
 
       <div>
         <label class="field-label" for="emailBody">{{ i18n.t('email.body') }}</label>
-        <textarea id="emailBody" name="emailBody" rows="10" class="field font-mono text-xs" [(ngModel)]="emailDraft.body"></textarea>
+        <textarea
+          id="emailBody"
+          name="emailBody"
+          rows="10"
+          class="field font-mono text-xs"
+          [(ngModel)]="emailDraft.body"
+          required
+        ></textarea>
+        <p class="field-error">{{ i18n.t('form.required') }}</p>
       </div>
+
+      @if (emailForm.submitted && emailForm.invalid) {
+        <p class="alert-error" role="alert">{{ i18n.t('form.incomplete') }}</p>
+      }
 
       @if (error()) {
         <p class="alert-error" role="alert">{{ error() }}</p>
       }
 
-      <div class="flex justify-end gap-3">
-        <button type="button" class="btn-secondary" (click)="close()">{{ i18n.t('common.cancel') }}</button>
+      <div class="flex items-center justify-end gap-3">
+        <p class="field-required-note mr-auto">{{ i18n.t('form.requiredNote') }}</p>
+        <button type="button" class="btn-secondary" (click)="close()">
+          {{ i18n.t('common.cancel') }}
+        </button>
         <button type="submit" class="btn-primary">{{ i18n.t('email.send') }}</button>
       </div>
     </form>
@@ -515,15 +890,38 @@
     "
     (closed)="close()"
   >
-    <form class="space-y-5" (ngSubmit)="recordPayment()">
+    <form
+      class="space-y-5"
+      novalidate
+      #paymentForm="ngForm"
+      (ngSubmit)="paymentForm.valid && recordPayment()"
+    >
       <div class="grid gap-4 sm:grid-cols-2">
         <div>
           <label class="field-label" for="amount">{{ i18n.t('invoices.payment.amount') }}</label>
-          <input id="amount" name="amount" type="number" min="0" step="0.01" class="field" [(ngModel)]="paymentDraft.amount" />
+          <input
+            id="amount"
+            name="amount"
+            type="number"
+            min="0.01"
+            step="0.01"
+            class="field"
+            [(ngModel)]="paymentDraft.amount"
+            required
+          />
+          <p class="field-error">{{ i18n.t('payment.error.amount') }}</p>
         </div>
         <div>
           <label class="field-label" for="paymentDate">{{ i18n.t('invoices.payment.date') }}</label>
-          <input id="paymentDate" name="paymentDate" type="date" class="field" [(ngModel)]="paymentDraft.date" />
+          <input
+            id="paymentDate"
+            name="paymentDate"
+            type="date"
+            class="field"
+            [(ngModel)]="paymentDraft.date"
+            required
+          />
+          <p class="field-error">{{ i18n.t('form.required') }}</p>
         </div>
       </div>
 
@@ -537,8 +935,16 @@
           </select>
         </div>
         <div>
-          <label class="field-label" for="reference">{{ i18n.t('invoices.payment.reference') }}</label>
-          <input id="reference" name="reference" class="field" placeholder="VIR-88213" [(ngModel)]="paymentDraft.reference" />
+          <label class="field-label" for="reference">{{
+            i18n.t('invoices.payment.reference')
+          }}</label>
+          <input
+            id="reference"
+            name="reference"
+            class="field"
+            placeholder="VIR-88213"
+            [(ngModel)]="paymentDraft.reference"
+          />
         </div>
       </div>
 
@@ -553,12 +959,19 @@
         />
       </div>
 
+      @if (paymentForm.submitted && paymentForm.invalid) {
+        <p class="alert-error" role="alert">{{ i18n.t('form.incomplete') }}</p>
+      }
+
       @if (error()) {
         <p class="alert-error" role="alert">{{ error() }}</p>
       }
 
-      <div class="flex justify-end gap-3">
-        <button type="button" class="btn-secondary" (click)="close()">{{ i18n.t('common.cancel') }}</button>
+      <div class="flex items-center justify-end gap-3">
+        <p class="field-required-note mr-auto">{{ i18n.t('form.requiredNote') }}</p>
+        <button type="button" class="btn-secondary" (click)="close()">
+          {{ i18n.t('common.cancel') }}
+        </button>
         <button type="submit" class="btn-primary">{{ i18n.t('common.save') }}</button>
       </div>
     </form>

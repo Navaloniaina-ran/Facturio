@@ -1,12 +1,18 @@
-<div class="no-print mb-4 flex flex-wrap items-center justify-between gap-3">
-  <p class="text-xs text-slate-500">{{ i18n.t('preview.hintPdf') }}</p>
-  <button type="button" class="btn-primary" (click)="print()">
-    {{ i18n.t('preview.print') }}
-  </button>
-</div>
+@if (actions()) {
+  <div class="no-print mb-4 flex flex-wrap items-center justify-between gap-3">
+    <p class="text-xs text-slate-500">{{ i18n.t('preview.hintPdf') }}</p>
+    <button type="button" class="btn-primary" (click)="print()">
+      {{ i18n.t('preview.print') }}
+    </button>
+  </div>
+}
 
 <!-- printable : seule cette zone reste visible à l'impression -->
-<article class="printable sheet rounded-2xl p-8 ring-1 ring-slate-200" [style]="accentStyle()">
+<article
+  class="sheet rounded-2xl p-8 ring-1 ring-slate-200"
+  [class.printable]="actions()"
+  [style]="accentStyle()"
+>
   <header class="sheet-header">
     <div>
       @if (settings().logo) {
@@ -69,7 +75,11 @@
           <td class="right">{{ line.unitPrice | amount }}</td>
           <td class="right">
             @if (line.discountValue) {
-              {{ line.discountType === 'PERCENT' ? line.discountValue + ' %' : (line.discountValue | amount) }}
+              {{
+                line.discountType === 'PERCENT'
+                  ? line.discountValue + ' %'
+                  : (line.discountValue | amount)
+              }}
             } @else {
               —
             }
@@ -140,7 +150,9 @@
 
   <section class="notes">
     @if (invoice().terms) {
-      <p><span class="font-semibold">{{ i18n.t('preview.terms') }} :</span> {{ invoice().terms }}</p>
+      <p>
+        <span class="font-semibold">{{ i18n.t('preview.terms') }} :</span> {{ invoice().terms }}
+      </p>
     }
     @if (!invoice().vatApplicable && settings().vatExemptionMention) {
       <p class="mt-2 font-semibold">{{ settings().vatExemptionMention }}</p>

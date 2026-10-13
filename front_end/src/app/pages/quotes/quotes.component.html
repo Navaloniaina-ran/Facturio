@@ -1,34 +1,52 @@
 <div class="space-y-5">
-  <div class="page-head">
-    <div>
-      <h1 class="page-title">{{ i18n.t('quotes.title') }}</h1>
-      <p class="page-subtitle">
-        {{ i18n.t('quotes.subtitle', { count: service.list().length, rate: service.acceptanceRate() }) }}
-      </p>
-    </div>
-    <button type="button" class="btn-primary" (click)="openCreate()">{{ i18n.t('quotes.new') }}</button>
-  </div>
+  <app-page-header
+    icon="quote"
+    [title]="i18n.t('quotes.title')"
+    [subtitle]="
+      i18n.t('quotes.subtitle', {
+        count: service.list().length,
+        rate: service.acceptanceRate(),
+      })
+    "
+  >
+    <button type="button" class="btn-primary cursor-pointer" (click)="openCreate()">
+      {{ i18n.t('quotes.new') }}
+    </button>
+  </app-page-header>
 
   @if (message()) {
-    <p class="flash">{{ message() }}</p>
+    <p class="flash" role="status">{{ message() }}</p>
   }
 
-  <div class="flex flex-wrap items-center gap-2">
-    @for (item of tabs; track item) {
-      <button
-        type="button"
-        class="chip"
-        [class.chip-active]="tab() === item"
-        (click)="tab.set(item)"
-      >
-        {{ tabLabel(item) }}
-        <span class="num opacity-60">{{ countFor(item) }}</span>
-      </button>
-    }
-  </div>
+  <!-- Barre d'outils : recherche puis segments chiffrés -->
+  <section class="card p-3 sm:p-4">
+    <div class="flex flex-wrap items-center gap-3">
+      <app-search-field
+        [value]="search()"
+        [placeholder]="i18n.t('quotes.searchPlaceholder')"
+        [label]="i18n.t('quotes.searchLabel')"
+        [shortcut]="!modal()"
+        (valueChange)="search.set($event)"
+      />
+
+      <app-filter-segments
+        [segments]="filterSegments()"
+        [active]="tab()"
+        [label]="i18n.t('list.filterLabel')"
+        (select)="tab.set($any($event))"
+      />
+    </div>
+
+    <app-result-bar
+      [count]="filtered().length"
+      [total]="service.list().length"
+      [chips]="filterChips()"
+      (reset)="resetFilters()"
+    />
+  </section>
 
   <div class="card overflow-hidden">
-    <div class="overflow-x-auto">
+    <div class="table-wrap">
       <table class="w-full min-w-[56rem]">
         <thead class="bg-slate-50/80">
           <tr>
@@ -59,7 +77,9 @@
               <td class="td-cell">{{ quote.brandName }}</td>
               <td class="td-cell text-slate-500">{{ quote.date | localDate }}</td>
               <td class="td-cell text-slate-500">{{ quote.expiryDate | localDate }}</td>
-              <td class="td-cell num text-right font-semibold text-slate-900">{{ quote.totalInclVat | amount }}</td>
+              <td class="td-cell num text-right font-semibold text-slate-900">
+                {{ quote.totalInclVat | amount }}
+              </td>
               <td class="td-cell"><app-status-badge [status]="quote.status" /></td>
               <td class="td-cell">
                 <div class="flex items-center justify-end gap-0.5">
@@ -68,32 +88,12 @@
                     [label]="i18n.t('preview.open')"
                     (action)="open(quote, 'detail')"
                   />
-                  @if (quote.editable) {
-                    <app-icon-button
-                      icon="edit"
-                      tone="brand"
-                      [label]="i18n.t('common.edit')"
-                      (action)="openEdit(quote)"
-                    />
-                  }
-                  <app-icon-button
-                    icon="mail"
-                    tone="brand"
-                    [label]="i18n.t('email.send')"
-                    (action)="openEmail(quote)"
-                  />
                   @if (quote.status === 'DRAFT') {
                     <app-icon-button
                       icon="send"
                       tone="brand"
                       [label]="i18n.t('common.send')"
                       (action)="send(quote)"
-                    />
-                    <app-icon-button
-                      icon="delete"
-                      tone="danger"
-                      [label]="i18n.t('common.delete')"
-                      (action)="open(quote, 'delete')"
                     />
                   }
                   @if (quote.status === 'SENT') {
@@ -118,17 +118,33 @@
                       (action)="convert(quote)"
                     />
                   }
-                  <app-icon-button
-                    icon="duplicate"
-                    [label]="i18n.t('common.duplicate')"
-                    (action)="duplicate(quote)"
-                  />
+
+                  <app-action-menu [items]="secondaryActions(quote)" />
                 </div>
               </td>
             </tr>
           } @empty {
             <tr>
-              <td class="td-cell text-slate-500" colspan="7">{{ i18n.t('quotes.empty') }}</td>
+              <td colspan="7" class="p-4">
+                <div class="empty-state">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path [attr.d]="icons.inbox" />
+                  </svg>
+                  @if (hasFilters()) {
+                    <p class="empty-state-title">{{ i18n.t('list.noResult.title') }}</p>
+                    <p>{{ i18n.t('list.noResult.hint') }}</p>
+                    <button type="button" class="btn-secondary" (click)="resetFilters()">
+                      {{ i18n.t('common.resetFilters') }}
+                    </button>
+                  } @else {
+                    <p class="empty-state-title">{{ i18n.t('quotes.empty.title') }}</p>
+                    <p>{{ i18n.t('quotes.empty.hint') }}</p>
+                    <button type="button" class="btn-primary" (click)="openCreate()">
+                      {{ i18n.t('quotes.new') }}
+                    </button>
+                  }
+                </div>
+              </td>
             </tr>
           }
         </tbody>
@@ -149,15 +165,22 @@
     [wide]="true"
     (closed)="close()"
   >
-    <form class="space-y-6" (ngSubmit)="save(false)">
+    <form
+      class="space-y-6"
+      novalidate
+      #quoteForm="ngForm"
+      (ngSubmit)="quoteForm.valid && save(false)"
+    >
       <div class="grid gap-4 sm:grid-cols-2">
         <div>
           <label class="field-label" for="brand">{{ i18n.t('campaigns.form.brand') }}</label>
-          <select id="brand" name="brand" class="field" [(ngModel)]="draft.brandId">
+          <select id="brand" name="brand" class="field" [(ngModel)]="draft.brandId" required>
+            <option value="">{{ i18n.t('form.requiredSelect') }}</option>
             @for (brand of brands(); track brand.id) {
               <option [value]="brand.id">{{ brand.name }}</option>
             }
           </select>
+          <p class="field-error">{{ i18n.t('form.requiredSelect') }}</p>
         </div>
         <div>
           <label class="field-label" for="campaign">{{ i18n.t('quotes.form.campaign') }}</label>
@@ -173,11 +196,27 @@
       <div class="grid gap-4 sm:grid-cols-2">
         <div>
           <label class="field-label" for="date">{{ i18n.t('quotes.form.date') }}</label>
-          <input id="date" name="date" type="date" class="field" [(ngModel)]="draft.date" />
+          <input
+            id="date"
+            name="date"
+            type="date"
+            class="field"
+            [(ngModel)]="draft.date"
+            required
+          />
+          <p class="field-error">{{ i18n.t('form.required') }}</p>
         </div>
         <div>
           <label class="field-label" for="expiry">{{ i18n.t('quotes.form.expiry') }}</label>
-          <input id="expiry" name="expiry" type="date" class="field" [(ngModel)]="draft.expiryDate" />
+          <input
+            id="expiry"
+            name="expiry"
+            type="date"
+            class="field"
+            [(ngModel)]="draft.expiryDate"
+            required
+          />
+          <p class="field-error">{{ i18n.t('form.required') }}</p>
         </div>
       </div>
 
@@ -193,14 +232,25 @@
 
       <div>
         <label class="field-label" for="terms">{{ i18n.t('invoices.form.terms') }}</label>
-        <textarea id="terms" name="terms" rows="2" class="field" [(ngModel)]="draft.terms"></textarea>
+        <textarea
+          id="terms"
+          name="terms"
+          rows="2"
+          class="field"
+          [(ngModel)]="draft.terms"
+        ></textarea>
       </div>
+
+      @if (quoteForm.submitted && quoteForm.invalid) {
+        <p class="alert-error" role="alert">{{ i18n.t('form.incomplete') }}</p>
+      }
 
       @if (error()) {
         <p class="alert-error" role="alert">{{ error() }}</p>
       }
 
-      <div class="flex flex-wrap justify-end gap-3">
+      <div class="flex flex-wrap items-center justify-end gap-3">
+        <p class="field-required-note mr-auto">{{ i18n.t('form.requiredNote') }}</p>
         <button type="button" class="btn-secondary" (click)="save(true)">
           {{ i18n.t('quotes.form.saveDraft') }}
         </button>
@@ -221,28 +271,36 @@
     <div class="space-y-6">
       <app-status-badge [status]="quote.status" />
 
-      <table class="w-full text-sm">
-        <thead>
-          <tr class="border-b border-slate-100 text-xs text-slate-500 uppercase">
-            <th class="py-2 text-left">{{ i18n.t('invoices.detail.deliverable') }}</th>
-            <th class="py-2 text-right">{{ i18n.t('invoices.detail.qty') }}</th>
-            <th class="py-2 text-right">{{ i18n.t('invoices.detail.unit') }}</th>
-            <th class="py-2 text-right">{{ i18n.t('invoices.detail.discount') }}</th>
-            <th class="py-2 text-right">{{ i18n.t('invoices.detail.vat') }}</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-slate-100">
-          @for (line of quote.lines; track line.id) {
-            <tr>
-              <td class="py-2.5 text-slate-700">{{ line.description }}</td>
-              <td class="num py-2.5 text-right">{{ line.quantity }}</td>
-              <td class="num py-2.5 text-right">{{ line.unitPrice | amount }}</td>
-              <td class="num py-2.5 text-right">{{ line.discountType === 'PERCENT' ? line.discountValue + ' %' : (line.discountValue | amount) }}</td>
-              <td class="num py-2.5 text-right">{{ line.vatRate }} %</td>
+      <div class="table-wrap">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="border-b border-slate-100 text-xs text-slate-500 uppercase">
+              <th class="py-2 text-left">{{ i18n.t('invoices.detail.deliverable') }}</th>
+              <th class="py-2 text-right">{{ i18n.t('invoices.detail.qty') }}</th>
+              <th class="py-2 text-right">{{ i18n.t('invoices.detail.unit') }}</th>
+              <th class="py-2 text-right">{{ i18n.t('invoices.detail.discount') }}</th>
+              <th class="py-2 text-right">{{ i18n.t('invoices.detail.vat') }}</th>
             </tr>
-          }
-        </tbody>
-      </table>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            @for (line of quote.lines; track line.id) {
+              <tr>
+                <td class="py-2.5 text-slate-700">{{ line.description }}</td>
+                <td class="num py-2.5 text-right">{{ line.quantity }}</td>
+                <td class="num py-2.5 text-right">{{ line.unitPrice | amount }}</td>
+                <td class="num py-2.5 text-right">
+                  {{
+                    line.discountType === 'PERCENT'
+                      ? line.discountValue + ' %'
+                      : (line.discountValue | amount)
+                  }}
+                </td>
+                <td class="num py-2.5 text-right">{{ line.vatRate }} %</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
 
       <dl class="space-y-1 rounded-xl bg-slate-50 p-4 text-sm">
         @if (quote.globalDiscountAmount > 0) {

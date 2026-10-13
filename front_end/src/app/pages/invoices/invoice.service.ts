@@ -1,4 +1,5 @@
 import { Injectable, computed, inject } from '@angular/core';
+import { BillingApiService } from '../../core/api/billing-api.service';
 import {
   NO_DISCOUNT,
   addDays,
@@ -67,6 +68,7 @@ export interface InvoiceDraft {
 @Injectable({ providedIn: 'root' })
 export class InvoiceService {
   private readonly store = inject(WorkspaceStore);
+  private readonly api = inject(BillingApiService);
 
   /** Toutes les factures, statut recalculé et montants à jour. */
   readonly list = computed<InvoiceView[]>(() => {
@@ -112,7 +114,11 @@ export class InvoiceService {
   readonly upcoming = computed(() =>
     this.list()
       .filter((invoice) => {
-        if (invoice.outstanding <= 0 || invoice.status === 'DRAFT' || invoice.status === 'CANCELLED') {
+        if (
+          invoice.outstanding <= 0 ||
+          invoice.status === 'DRAFT' ||
+          invoice.status === 'CANCELLED'
+        ) {
           return false;
         }
         const days = daysBetween(today(), invoice.dueDate);
@@ -174,6 +180,11 @@ export class InvoiceService {
       return { ok: false, errorKey: block.errorKey, params: block.params };
     }
 
+    if (this.store.remote()) {
+      this.api.createInvoice(draft).subscribe((invoice) => this.addRemote(invoice));
+      return { ok: true };
+    }
+
     const invoice: Invoice = {
       id: this.store.newId('i'),
       kind: 'INVOICE',
@@ -194,11 +205,10 @@ export class InvoiceService {
     };
 
     this.store.invoices.update((invoices) => [invoice, ...invoices]);
-    this.store.log(
-      'INVOICE',
-      draft.draft ? 'activity.invoiceDrafted' : 'activity.invoiceIssued',
-      { number: invoice.number, brand: this.store.brandName(invoice.brandId) },
-    );
+    this.store.log('INVOICE', draft.draft ? 'activity.invoiceDrafted' : 'activity.invoiceIssued', {
+      number: invoice.number,
+      brand: this.store.brandName(invoice.brandId),
+    });
 
     return { ok: true, value: this.byId(invoice.id) };
   }
@@ -214,6 +224,11 @@ export class InvoiceService {
     }
     if (existing.status !== 'DRAFT') {
       return { ok: false, errorKey: 'invoice.error.notEditable' };
+    }
+
+    if (this.store.remote()) {
+      this.api.updateInvoice(id, draft).subscribe((invoice) => this.replaceRemote(invoice));
+      return { ok: true, value: this.byId(id) };
     }
 
     this.store.invoices.update((invoices) =>
@@ -249,6 +264,13 @@ export class InvoiceService {
       return { ok: false, errorKey: 'invoice.error.notDeletable' };
     }
 
+    if (this.store.remote()) {
+      this.api.deleteInvoice(id).subscribe(() => {
+        this.store.invoices.update((invoices) => invoices.filter((invoice) => invoice.id !== id));
+      });
+      return { ok: true };
+    }
+
     this.store.invoices.update((invoices) => invoices.filter((invoice) => invoice.id !== id));
     return { ok: true };
   }
@@ -262,6 +284,10 @@ export class InvoiceService {
 
   /** Validation d'un brouillon : le numéro est attribué à cet instant. */
   send(id: string): void {
+    if (this.store.remote()) {
+      this.api.invoiceAction(id, 'send').subscribe((invoice) => this.replaceRemote(invoice));
+      return;
+    }
     this.store.invoices.update((invoices) =>
       invoices.map((invoice) => {
         if (invoice.id !== id) {
@@ -285,6 +311,10 @@ export class InvoiceService {
 
   cancel(id: string): void {
     const number = this.byId(id)?.number ?? '';
+    if (this.store.remote()) {
+      this.api.invoiceAction(id, 'cancel').subscribe((invoice) => this.replaceRemote(invoice));
+      return;
+    }
     this.setStatus(id, 'CANCELLED');
     this.store.log('INVOICE', 'activity.invoiceCancelled', { number });
   }
@@ -316,6 +346,14 @@ export class InvoiceService {
     const source = this.byId(id);
     if (!source) {
       return { ok: false, errorKey: 'payment.error.notFound' };
+    }
+
+    if (this.store.remote()) {
+      this.api.creditNote(id).subscribe((invoice) => {
+        this.addRemote(invoice);
+        this.setStatus(id, 'CANCELLED');
+      });
+      return { ok: true };
     }
 
     // Un avoir est un document à part entière : sa propre série, son propre intitulé.
@@ -355,6 +393,19 @@ export class InvoiceService {
   private setStatus(id: string, status: InvoiceStatus): void {
     this.store.invoices.update((invoices) =>
       invoices.map((invoice) => (invoice.id === id ? { ...invoice, status } : invoice)),
+    );
+  }
+
+  private addRemote(invoice: Invoice): void {
+    this.store.invoices.update((items) => [
+      invoice,
+      ...items.filter((item) => item.id !== invoice.id),
+    ]);
+  }
+
+  private replaceRemote(invoice: Invoice): void {
+    this.store.invoices.update((items) =>
+      items.map((item) => (item.id === invoice.id ? invoice : item)),
     );
   }
 

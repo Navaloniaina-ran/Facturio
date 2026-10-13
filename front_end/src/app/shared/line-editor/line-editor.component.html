@@ -13,6 +13,7 @@
       <div class="line-grid rounded-xl bg-slate-50 p-3">
         <input
           class="field bg-white"
+          required
           [placeholder]="i18n.t('lines.description')"
           [name]="'description-' + line.id"
           [(ngModel)]="line.description"
@@ -31,6 +32,7 @@
           class="field bg-white"
           type="number"
           min="1"
+          required
           [attr.aria-label]="i18n.t('lines.quantity')"
           [name]="'quantity-' + line.id"
           [(ngModel)]="line.quantity"
@@ -39,6 +41,7 @@
           class="field bg-white"
           type="number"
           min="0"
+          required
           [attr.aria-label]="i18n.t('lines.unitPrice')"
           [name]="'price-' + line.id"
           [(ngModel)]="line.unitPrice"
@@ -76,11 +79,13 @@
         />
         <button
           type="button"
-          class="btn-ghost justify-center hover:text-rose-600"
+          class="btn-ghost justify-center hover:bg-rose-50 hover:text-rose-600"
           [attr.aria-label]="i18n.t('lines.remove')"
           (click)="remove.emit(line.id)"
         >
-          ✕
+          <svg viewBox="0 0 24 24" class="size-4 fill-current" aria-hidden="true">
+            <path [attr.d]="icons.dismiss" />
+          </svg>
         </button>
       </div>
     } @empty {
@@ -90,11 +95,15 @@
     }
   </div>
 
-  <p class="mt-2 text-xs text-slate-400">{{ i18n.t('lines.columns') }}</p>
+  <p class="mt-2 text-xs text-slate-500">
+    {{ i18n.t('lines.columns') }} · {{ i18n.t('form.requiredNote') }}
+  </p>
 
   <!-- Remise globale -->
   @if (globalDiscount(); as discount) {
-    <div class="mt-4 flex flex-wrap items-center gap-3 rounded-xl bg-brand-50/60 px-4 py-3 ring-1 ring-brand-100">
+    <div
+      class="mt-4 flex flex-wrap items-center gap-3 rounded-xl bg-brand-50/60 px-4 py-3 ring-1 ring-brand-100"
+    >
       <span class="text-sm font-medium text-brand-900">{{ i18n.t('discount.global') }}</span>
       <div class="discount-cell ml-auto max-w-40">
         <input
@@ -160,20 +169,24 @@
                   [name]="'taxRate-' + tax.id"
                   [(ngModel)]="tax.rate"
                 />
-                <span class="field grid w-12 shrink-0 place-items-center bg-white text-center">%</span>
+                <span class="field grid w-12 shrink-0 place-items-center bg-white text-center"
+                  >%</span
+                >
               </div>
               <button
                 type="button"
-                class="btn-ghost hover:text-rose-600"
+                class="btn-ghost hover:bg-rose-50 hover:text-rose-600"
                 [attr.aria-label]="i18n.t('tax.remove')"
                 (click)="removeTax.emit(tax.id)"
               >
-                ✕
+                <svg viewBox="0 0 24 24" class="size-4 fill-current" aria-hidden="true">
+                  <path [attr.d]="icons.dismiss" />
+                </svg>
               </button>
             </li>
           }
         </ul>
-        <p class="mt-2 text-xs text-slate-400">{{ i18n.t('tax.negativeHint') }}</p>
+        <p class="mt-2 text-xs text-slate-500">{{ i18n.t('tax.negativeHint') }}</p>
       }
     </section>
   }
@@ -204,7 +217,7 @@
     }
 
     @if (!regime().vatApplicable) {
-      <div class="mt-1 flex justify-between text-xs text-slate-400">
+      <div class="mt-1 flex justify-between text-xs text-slate-500">
         <dt>{{ i18n.t('tax.vatNotApplicable') }}</dt>
         <dd>—</dd>
       </div>

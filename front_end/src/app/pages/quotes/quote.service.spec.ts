@@ -92,7 +92,7 @@ describe('QuoteService', () => {
           quantity: 1,
           unitPrice: 100,
           discountType: 'PERCENT',
-    discountValue: 0,
+          discountValue: 0,
           vatRate: 20,
         },
       ],

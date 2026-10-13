@@ -5,6 +5,7 @@ import { I18nService } from '../../core/i18n/i18n.service';
 import { DeliverableType, Discount, DiscountType, Line } from '../../core/models';
 import { WorkspaceStore } from '../../core/workspace-store.service';
 import { AmountPipe } from '../amount.pipe';
+import { ICONS } from '../icons';
 
 const TYPES: DeliverableType[] = ['REEL', 'STORY', 'POST', 'VIDEO', 'UGC', 'EVENT'];
 const DISCOUNT_TYPES: DiscountType[] = ['PERCENT', 'AMOUNT'];
@@ -26,6 +27,7 @@ const DISCOUNT_TYPES: DiscountType[] = ['PERCENT', 'AMOUNT'];
 export class LineEditorComponent {
   private readonly store = inject(WorkspaceStore);
   protected readonly i18n = inject(I18nService);
+  protected readonly icons = ICONS;
 
   /** Tableau modifié sur place par le parent : les objets sont partagés. */
   readonly lines = input.required<Line[]>();

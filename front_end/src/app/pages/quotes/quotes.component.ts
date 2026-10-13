@@ -14,6 +14,19 @@ import { IconButtonComponent } from '../../shared/icon-button/icon-button.compon
 import { StatusBadgeComponent } from '../../shared/status-badge/status-badge.component';
 import { CampaignService } from '../campaigns/campaign.service';
 import { QuoteDraft, QuoteService, QuoteView } from './quote.service';
+import { WorkspaceRoutes } from '../../core/workspace-routes';
+import { ICONS } from '../../shared/icons';
+import { PageHeaderComponent } from '../../shared/page-header/page-header.component';
+import { SearchFieldComponent } from '../../shared/search-field/search-field.component';
+import {
+  FilterSegment,
+  FilterSegmentsComponent,
+} from '../../shared/filter-segments/filter-segments.component';
+import { FilterChip, ResultBarComponent } from '../../shared/result-bar/result-bar.component';
+import {
+  ActionMenuComponent,
+  ActionMenuItem,
+} from '../../shared/action-menu/action-menu.component';
 
 type Tab = 'ALL' | QuoteStatus;
 type Modal = 'form' | 'detail' | 'email' | 'delete' | null;
@@ -29,10 +42,18 @@ type Modal = 'form' | 'detail' | 'email' | 'delete' | null;
     StatusBadgeComponent,
     LineEditorComponent,
     IconButtonComponent,
+    PageHeaderComponent,
+    SearchFieldComponent,
+    FilterSegmentsComponent,
+    ResultBarComponent,
+    ActionMenuComponent,
   ],
   templateUrl: './quotes.component.html',
 })
 export class QuotesComponent {
+  protected readonly icons = ICONS;
+
+  private readonly routes = inject(WorkspaceRoutes);
   private readonly store = inject(WorkspaceStore);
   private readonly router = inject(Router);
   private readonly emails = inject(EmailService);
@@ -67,9 +88,52 @@ export class QuotesComponent {
   protected draft: QuoteDraft = this.service.emptyDraft('');
   protected emailDraft = { to: '', subject: '', body: '' };
 
-  protected readonly filtered = computed(() =>
-    this.service.list().filter((quote) => this.tab() === 'ALL' || quote.status === this.tab()),
+  protected readonly search = signal('');
+
+  protected readonly filtered = computed(() => {
+    const term = this.search().trim().toLowerCase();
+    return this.service
+      .list()
+      .filter(
+        (quote) =>
+          (this.tab() === 'ALL' || quote.status === this.tab()) &&
+          (!term ||
+            (quote.number ?? '').toLowerCase().includes(term) ||
+            quote.brandName.toLowerCase().includes(term) ||
+            (quote.campaignName ?? '').toLowerCase().includes(term)),
+      );
+  });
+
+  /** Segments de la barre d'outils : l'effectif est annoncé avant le clic. */
+  protected readonly filterSegments = computed<FilterSegment[]>(() =>
+    this.tabs.map((tab) => ({
+      key: tab,
+      label: this.tabLabel(tab),
+      count: this.countFor(tab),
+    })),
   );
+
+  protected readonly filterChips = computed<FilterChip[]>(() => {
+    const chips: FilterChip[] = [];
+    const term = this.search().trim();
+
+    if (term) {
+      chips.push({
+        label: this.i18n.t('list.searchChip', { term }),
+        tone: 'brand',
+        clear: () => this.search.set(''),
+      });
+    }
+
+    if (this.tab() !== 'ALL') {
+      chips.push({
+        label: this.tabLabel(this.tab()),
+        clear: () => this.tab.set('ALL'),
+      });
+    }
+
+    return chips;
+  });
 
   protected tabLabel(tab: Tab): string {
     return tab === 'ALL' ? this.i18n.t('common.all') : this.i18n.status(tab);
@@ -79,6 +143,15 @@ export class QuotesComponent {
     return tab === 'ALL'
       ? this.service.list().length
       : this.service.list().filter((quote) => quote.status === tab).length;
+  }
+
+  protected readonly hasFilters = computed(
+    () => this.tab() !== 'ALL' || this.search().trim().length > 0,
+  );
+
+  protected resetFilters(): void {
+    this.tab.set('ALL');
+    this.search.set('');
   }
 
   protected openCreate(): void {
@@ -246,10 +319,50 @@ export class QuotesComponent {
       return;
     }
 
-    this.message.set(
-      this.i18n.t('quotes.flash.converted', { number: result.value?.number ?? '' }),
-    );
-    void this.router.navigate(['/app/factures']);
+    this.message.set(this.i18n.t('quotes.flash.converted', { number: result.value?.number ?? '' }));
+    void this.router.navigate(this.routes.to('factures'));
+  }
+
+  /**
+   * Actions secondaires d'une proposition. La ligne ne garde que le geste
+   * qu'appelle son statut — envoyer un brouillon, trancher une proposition
+   * envoyée, convertir une proposition acceptée — et l'aperçu.
+   */
+  protected secondaryActions(quote: QuoteView): ActionMenuItem[] {
+    const items: ActionMenuItem[] = [];
+
+    if (quote.editable) {
+      items.push({
+        icon: 'edit',
+        tone: 'brand',
+        label: this.i18n.t('common.edit'),
+        run: () => this.openEdit(quote),
+      });
+    }
+
+    items.push({
+      icon: 'mail',
+      tone: 'brand',
+      label: this.i18n.t('email.send'),
+      run: () => this.openEmail(quote),
+    });
+
+    items.push({
+      icon: 'duplicate',
+      label: this.i18n.t('common.duplicate'),
+      run: () => this.duplicate(quote),
+    });
+
+    if (quote.status === 'DRAFT') {
+      items.push({
+        icon: 'delete',
+        tone: 'danger',
+        label: this.i18n.t('common.delete'),
+        run: () => this.open(quote, 'delete'),
+      });
+    }
+
+    return items;
   }
 
   protected duplicate(quote: QuoteView): void {

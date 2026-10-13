@@ -1,5 +1,6 @@
 import { Component, computed, inject, input } from '@angular/core';
 import { I18nService } from '../../core/i18n/i18n.service';
+import { Settings } from '../../core/models';
 import { WorkspaceStore } from '../../core/workspace-store.service';
 import { InvoiceView } from '../../pages/invoices/invoice.service';
 import { AmountPipe } from '../amount.pipe';
@@ -22,7 +23,17 @@ export class InvoicePreviewComponent {
 
   readonly invoice = input.required<InvoiceView>();
 
-  protected readonly settings = this.store.settings.asReadonly();
+  /**
+   * Paramètres à utiliser pour l'en-tête et les mentions. Par défaut ceux de
+   * l'espace ; l'écran Paramètres passe son brouillon pour montrer, avant
+   * enregistrement, le résultat de ce qui vient d'être changé.
+   */
+  readonly draftSettings = input<Settings | null>(null, { alias: 'settings' });
+
+  /** Un aperçu illustratif n'apporte ni barre d'impression ni zone imprimable. */
+  readonly actions = input(true);
+
+  protected readonly settings = computed(() => this.draftSettings() ?? this.store.settings());
   protected readonly accentStyle = computed(() => `--accent: ${this.settings().accentColor}`);
 
   /** Un avoir porte son propre intitulé et son propre montant. */

@@ -11,12 +11,12 @@ describe('InvoicesComponent', () => {
     localStorage.clear();
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
-      providers: [provideRouter([{ path: 'app/factures', component: InvoicesComponent }])],
+      providers: [provideRouter([{ path: 'createur/factures', component: InvoicesComponent }])],
     });
     TestBed.inject(I18nService).setLanguage('fr');
 
     const harness = await RouterTestingHarness.create(
-      status ? `/app/factures?statut=${status}` : '/app/factures',
+      status ? `/createur/factures?statut=${status}` : '/createur/factures',
     );
     await harness.fixture.whenStable();
     return harness.fixture;
@@ -71,12 +71,23 @@ describe('InvoicesComponent', () => {
     const service = TestBed.inject(InvoiceService);
     const target = service.list().find((invoice) => invoice.status === 'PAID')!;
 
-    // 1. Le clic sur « Avoir » ouvre le détail, sans rien générer.
-    const creditButton = fixture.nativeElement.querySelector(
-      'tbody button[title="Avoir"]',
-    ) as HTMLButtonElement;
-    creditButton.click();
-    await fixture.whenStable();
+    // 1. « Avoir » est une action secondaire : elle vit dans le menu de
+    //    débordement de la ligne. L'ouvrir ne génère toujours rien.
+    const openCredit = async () => {
+      const trigger = fixture.nativeElement.querySelector(
+        'tbody app-action-menu button[aria-haspopup="menu"]',
+      ) as HTMLButtonElement;
+      trigger.click();
+      await fixture.whenStable();
+
+      const entry = [...fixture.nativeElement.querySelectorAll('tbody .action-menu-item')].find(
+        (item) => item.textContent?.trim() === 'Avoir',
+      ) as HTMLButtonElement;
+      entry.click();
+      await fixture.whenStable();
+    };
+
+    await openCredit();
 
     const modal = fixture.nativeElement.querySelector('app-modal') as HTMLElement;
     expect(modal.textContent).toContain('Générer un avoir');
@@ -95,10 +106,11 @@ describe('InvoicesComponent', () => {
     expect(service.byId(target.id)?.status).toBe('PAID');
 
     // 3. La confirmation crée l'avoir et annule la facture d'origine.
-    creditButton.click();
-    await fixture.whenStable();
+    await openCredit();
     const confirmButton = [
-      ...(fixture.nativeElement.querySelector('app-modal') as HTMLElement).querySelectorAll('button'),
+      ...(fixture.nativeElement.querySelector('app-modal') as HTMLElement).querySelectorAll(
+        'button',
+      ),
     ].find((b) => b.textContent?.includes('Générer l’avoir')) as HTMLButtonElement;
     confirmButton.click();
     await fixture.whenStable();
@@ -120,12 +132,35 @@ describe('InvoicesComponent', () => {
     const actions = [...fixture.nativeElement.querySelectorAll('tbody app-icon-button [title]')];
     const labels = actions.map((action) => (action as HTMLElement).getAttribute('title'));
 
+    // Seuls les gestes courants restent alignés dans la ligne.
     expect(labels).toContain('Voir');
-    expect(labels).toContain('Envoyer par email');
     expect(labels).toContain('Paiement');
+    expect(labels).toContain('Relancer');
     // L'icône ne porte aucun texte : le nom accessible vient de aria-label.
     expect((actions[0] as HTMLElement).textContent?.trim()).toBe('');
     expect((actions[0] as HTMLElement).getAttribute('aria-label')).toBe('Voir');
+  });
+
+  it('moves the secondary actions into the row overflow menu', async () => {
+    const fixture = await create('OVERDUE');
+
+    // Fermé, le menu ne laisse fuiter aucune de ses entrées.
+    expect(fixture.nativeElement.querySelector('.action-menu')).toBeNull();
+
+    const trigger = fixture.nativeElement.querySelector(
+      'tbody app-action-menu button[aria-haspopup="menu"]',
+    ) as HTMLButtonElement;
+    expect(trigger.getAttribute('aria-expanded')).toBe('false');
+
+    trigger.click();
+    await fixture.whenStable();
+
+    expect(trigger.getAttribute('aria-expanded')).toBe('true');
+    const entries = [...fixture.nativeElement.querySelectorAll('tbody .action-menu-item')].map(
+      (item) => (item as HTMLElement).textContent?.trim(),
+    );
+    expect(entries).toContain('Envoyer par email');
+    expect(entries).toContain('Dupliquer');
   });
 
   it('translates the tabs and the columns', async () => {

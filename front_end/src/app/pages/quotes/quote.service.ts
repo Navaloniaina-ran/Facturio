@@ -1,13 +1,7 @@
 import { Injectable, computed, inject } from '@angular/core';
+import { BillingApiService } from '../../core/api/billing-api.service';
 import { NO_DISCOUNT, computeTotals, taxationOf, today } from '../../core/calculations';
-import {
-  ActionResult,
-  Discount,
-  DocumentTax,
-  Line,
-  Quote,
-  QuoteStatus,
-} from '../../core/models';
+import { ActionResult, Discount, DocumentTax, Line, Quote, QuoteStatus } from '../../core/models';
 import { WorkspaceStore } from '../../core/workspace-store.service';
 import { InvoiceService, InvoiceView } from '../invoices/invoice.service';
 
@@ -43,6 +37,7 @@ export interface QuoteDraft {
 export class QuoteService {
   private readonly store = inject(WorkspaceStore);
   private readonly invoices = inject(InvoiceService);
+  private readonly api = inject(BillingApiService);
 
   readonly list = computed<QuoteView[]>(() =>
     this.store
@@ -113,6 +108,11 @@ export class QuoteService {
       return { ok: false, errorKey: 'quote.error.lines' };
     }
 
+    if (this.store.remote()) {
+      this.api.createQuote(draft).subscribe((quote) => this.addRemote(quote));
+      return { ok: true };
+    }
+
     const quote: Quote = {
       id: this.store.newId('q'),
       number: draft.draft ? '' : this.store.nextNumber('QUOTE'),
@@ -148,6 +148,11 @@ export class QuoteService {
       return { ok: false, errorKey: 'quote.error.notEditable' };
     }
 
+    if (this.store.remote()) {
+      this.api.updateQuote(id, draft).subscribe((quote) => this.replaceRemote(quote));
+      return { ok: true, value: this.byId(id) };
+    }
+
     this.store.quotes.update((quotes) =>
       quotes.map((quote) =>
         quote.id === id
@@ -171,6 +176,10 @@ export class QuoteService {
   }
 
   send(id: string): void {
+    if (this.store.remote()) {
+      this.api.quoteAction(id, 'send').subscribe((quote) => this.replaceRemote(quote));
+      return;
+    }
     this.store.quotes.update((quotes) =>
       quotes.map((quote) =>
         quote.id === id
@@ -186,6 +195,11 @@ export class QuoteService {
   }
 
   mark(id: string, status: Extract<QuoteStatus, 'ACCEPTED' | 'REFUSED'>): void {
+    if (this.store.remote()) {
+      const action = status === 'ACCEPTED' ? 'accept' : 'refuse';
+      this.api.quoteAction(id, action).subscribe((quote) => this.replaceRemote(quote));
+      return;
+    }
     this.setStatus(id, status);
 
     const quote = this.byId(id);
@@ -218,6 +232,18 @@ export class QuoteService {
     }
     if (quote.status !== 'ACCEPTED') {
       return { ok: false, errorKey: 'quote.error.notAccepted' };
+    }
+
+    if (this.store.remote()) {
+      this.api.quoteToInvoice(id).subscribe((invoice) => {
+        this.store.invoices.update((items) => [invoice, ...items]);
+        this.store.quotes.update((items) =>
+          items.map((item) =>
+            item.id === id ? { ...item, status: 'INVOICED', invoiceId: invoice.id } : item,
+          ),
+        );
+      });
+      return { ok: true };
     }
 
     const result = this.invoices.create({
@@ -279,6 +305,13 @@ export class QuoteService {
       return { ok: false, errorKey: 'quote.error.draftOnly' };
     }
 
+    if (this.store.remote()) {
+      this.api.deleteQuote(id).subscribe(() => {
+        this.store.quotes.update((quotes) => quotes.filter((quote) => quote.id !== id));
+      });
+      return { ok: true };
+    }
+
     this.store.quotes.update((quotes) => quotes.filter((quote) => quote.id !== id));
     return { ok: true };
   }
@@ -295,5 +328,13 @@ export class QuoteService {
     this.store.quotes.update((quotes) =>
       quotes.map((quote) => (quote.id === id ? { ...quote, status } : quote)),
     );
+  }
+
+  private addRemote(quote: Quote): void {
+    this.store.quotes.update((items) => [quote, ...items.filter((item) => item.id !== quote.id)]);
+  }
+
+  private replaceRemote(quote: Quote): void {
+    this.store.quotes.update((items) => items.map((item) => (item.id === quote.id ? quote : item)));
   }
 }

@@ -9,7 +9,7 @@ describe('QuotesComponent', () => {
     localStorage.clear();
     await TestBed.configureTestingModule({
       imports: [QuotesComponent],
-      providers: [provideRouter([{ path: 'app/factures', children: [] }])],
+      providers: [provideRouter([{ path: 'createur/factures', children: [] }])],
     }).compileComponents();
     TestBed.inject(I18nService).setLanguage('fr');
   });
@@ -37,9 +37,7 @@ describe('QuotesComponent', () => {
 
   it('offers the conversion on an accepted quote', async () => {
     const fixture = await create();
-    expect(
-      fixture.nativeElement.querySelector('[title="Transformer en facture"]'),
-    ).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('[title="Transformer en facture"]')).toBeTruthy();
   });
 
   it('converts the accepted quote into an invoice', async () => {
@@ -62,7 +60,12 @@ describe('QuotesComponent', () => {
     click(fixture, 'Refusée');
     await fixture.whenStable();
 
-    expect(fixture.nativeElement.textContent).toContain('Aucune proposition pour ce filtre.');
+    // Un filtre sans résultat propose de le lever, pas d'en créer une :
+    // la liste n'est pas vide, elle est masquée.
+    const text = fixture.nativeElement.textContent as string;
+    expect(text).toContain('Aucun résultat');
+    expect(text).toContain('Réinitialiser les filtres');
+    expect(text).not.toContain('Aucune proposition');
   });
 
   it('translates the page title', async () => {
