@@ -62,6 +62,12 @@ export class WorkspaceStore {
   readonly emails = signal<EmailLog[]>([]);
   readonly activities = signal<Activity[]>([]);
 
+  /**
+   * Vrai lorsque les données viennent de l'API : les services métier écrivent
+   * alors côté serveur au lieu de se contenter du jeu de démonstration.
+   */
+  readonly remote = signal(false);
+
   private readonly counters = new Map<string, number>();
   private sequence = 100;
 
@@ -80,12 +86,57 @@ export class WorkspaceStore {
   });
 
   constructor() {
+    this.resetCounters();
+  }
+
+  /**
+   * Retour au jeu de démonstration : à la déconnexion, rien de ce qui vient de
+   * l'API ne doit survivre à la session suivante.
+   */
+  resetDemo(): void {
+    this.remote.set(false);
+    this.creator.set(structuredClone(DEMO_CREATOR));
+    this.settings.set(structuredClone(DEMO_SETTINGS));
+    this.subscription.set(structuredClone(DEMO_SUBSCRIPTION));
+    this.platformInvoices.set(structuredClone(DEMO_PLATFORM_INVOICES));
+    this.brands.set(structuredClone(DEMO_BRANDS));
+    this.campaigns.set(structuredClone(DEMO_CAMPAIGNS));
+    this.collaborations.set(structuredClone(DEMO_COLLABORATIONS));
+    this.quotes.set(structuredClone(DEMO_QUOTES));
+    this.invoices.set(structuredClone(DEMO_INVOICES));
+    this.payments.set(structuredClone(DEMO_PAYMENTS));
+    this.reminderSteps.set(structuredClone(DEMO_REMINDER_STEPS));
+    this.reminders.set([]);
+    this.emails.set([]);
+    this.activities.set([]);
+    this.resetCounters();
+  }
+
+  /**
+   * Vide les modules de facturation. Ils ne sont pas encore servis par l'API :
+   * les laisser garnis de démonstration ferait passer des documents fictifs
+   * pour des documents réels.
+   */
+  clearBillingData(): void {
+    this.quotes.set([]);
+    this.invoices.set([]);
+    this.payments.set([]);
+    this.reminders.set([]);
+    this.emails.set([]);
+    this.activities.set([]);
+  }
+
+  private resetCounters(): void {
     // Les compteurs reprennent la numérotation déjà consommée par série.
+    this.counters.clear();
     this.counters.set(
       DEMO_SETTINGS.invoicePrefix,
       this.highestCounter(DEMO_INVOICES.filter((i) => i.kind === 'INVOICE').map((i) => i.number)),
     );
-    this.counters.set(DEMO_SETTINGS.quotePrefix, this.highestCounter(DEMO_QUOTES.map((q) => q.number)));
+    this.counters.set(
+      DEMO_SETTINGS.quotePrefix,
+      this.highestCounter(DEMO_QUOTES.map((q) => q.number)),
+    );
   }
 
   newId(prefix: string): string {
@@ -103,7 +154,15 @@ export class WorkspaceStore {
 
   /** Numéro qui sera attribué au prochain document, sans le consommer. */
   peekNumber(series: NumberSeries): string {
-    const prefix = this.prefixOf(series);
+    return this.peekNumberFor(this.prefixOf(series));
+  }
+
+  /**
+   * Même calcul, pour un préfixe donné : l'écran Paramètres montre ainsi le
+   * numéro qu'attribuerait le préfixe en cours de saisie. Chaque préfixe a son
+   * propre compteur, une nouvelle série repart donc à 0001.
+   */
+  peekNumberFor(prefix: string): string {
     return documentNumber(prefix, new Date().getFullYear(), (this.counters.get(prefix) ?? 0) + 1);
   }
 

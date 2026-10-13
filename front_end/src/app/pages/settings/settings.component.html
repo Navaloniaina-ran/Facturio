@@ -4,7 +4,22 @@
       <h1 class="page-title">{{ i18n.t('nav.settings') }}</h1>
       <p class="page-subtitle">{{ i18n.t('settings.subtitle') }}</p>
     </div>
-    <button type="button" class="btn-primary" (click)="save()">{{ i18n.t('common.save') }}</button>
+
+    <div class="flex flex-wrap items-center gap-2">
+      @if (dirty()) {
+        <span
+          class="rounded-full bg-amber-50 px-3 py-1 text-xs font-medium text-amber-700 ring-1 ring-amber-200"
+        >
+          {{ i18n.t('settings.unsaved') }}
+        </span>
+        <button type="button" class="btn-ghost" (click)="revert()">
+          {{ i18n.t('settings.revert') }}
+        </button>
+      }
+      <button type="button" class="btn-primary" (click)="save()">
+        {{ i18n.t('common.save') }}
+      </button>
+    </div>
   </div>
 
   @if (message()) {
@@ -14,180 +29,360 @@
     <p class="alert-error" role="alert">{{ error() }}</p>
   }
 
-  <form class="grid gap-6 lg:grid-cols-2" (ngSubmit)="save()">
-    <!-- Identité -->
-    <section class="card p-5">
-      <h2 class="text-sm font-semibold text-slate-900">{{ i18n.t('settings.identity') }}</h2>
+  <div class="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_25rem]">
+    <!-- Réglages : une carte par sujet, chacune annonçant ce qu'elle change -->
+    <form
+      class="space-y-5"
+      novalidate
+      #settingsForm="ngForm"
+      (ngSubmit)="settingsForm.valid && save()"
+    >
+      <!-- Identité -->
+      <section class="card p-5">
+        <h2 class="card-title">{{ i18n.t('settings.identity') }}</h2>
+        <p class="mt-1 text-xs text-slate-500">{{ i18n.t('settings.identityHint') }}</p>
 
-      <div class="mt-4 space-y-4">
-        <div>
-          <label class="field-label" for="businessName">{{ i18n.t('settings.businessName') }}</label>
-          <input id="businessName" name="businessName" class="field" [(ngModel)]="form.businessName" />
-        </div>
-        <div>
-          <label class="field-label" for="address">{{ i18n.t('settings.address') }}</label>
-          <textarea id="address" name="address" rows="2" class="field" [(ngModel)]="form.address"></textarea>
-        </div>
-        <div>
-          <label class="field-label" for="taxId">{{ i18n.t('settings.taxId') }}</label>
-          <input id="taxId" name="taxId" class="field" [(ngModel)]="form.taxId" />
-        </div>
-        <div>
-          <label class="field-label" for="bankDetails">{{ i18n.t('settings.bankDetails') }}</label>
-          <input id="bankDetails" name="bankDetails" class="field" placeholder="FR76 …" [(ngModel)]="form.bankDetails" />
-        </div>
-      </div>
-    </section>
-
-    <!-- Logo et couleur -->
-    <section class="card p-5">
-      <h2 class="text-sm font-semibold text-slate-900">{{ i18n.t('settings.branding') }}</h2>
-
-      <div class="mt-4 space-y-4">
-        <div>
-          <span class="field-label">{{ i18n.t('settings.logo') }}</span>
-          <div class="flex items-center gap-4">
-            <div class="grid size-20 shrink-0 place-items-center overflow-hidden rounded-xl bg-slate-50 ring-1 ring-slate-200">
-              @if (service.current().logo) {
-                <img class="max-h-16 max-w-16 object-contain" [src]="service.current().logo" alt="" />
-              } @else {
-                <span class="text-xs text-slate-400">—</span>
-              }
-            </div>
-            <div class="min-w-0">
+        <div class="mt-4 space-y-4">
+          <div>
+            <label class="field-label" for="businessName">{{
+              i18n.t('settings.businessName')
+            }}</label>
+            <input
+              id="businessName"
+              name="businessName"
+              class="field"
+              required
+              [ngModel]="form().businessName"
+              (ngModelChange)="patch('businessName', $event)"
+            />
+            <p class="field-error">{{ i18n.t('form.required') }}</p>
+          </div>
+          <div>
+            <label class="field-label" for="address">{{ i18n.t('settings.address') }}</label>
+            <textarea
+              id="address"
+              name="address"
+              rows="2"
+              class="field"
+              [ngModel]="form().address"
+              (ngModelChange)="patch('address', $event)"
+            ></textarea>
+          </div>
+          <div class="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label class="field-label" for="taxId">{{ i18n.t('settings.taxId') }}</label>
               <input
-                id="logo"
-                name="logo"
-                type="file"
-                accept="image/png,image/jpeg"
-                class="field cursor-pointer text-xs"
-                (change)="pickLogo($event)"
+                id="taxId"
+                name="taxId"
+                class="field"
+                [ngModel]="form().taxId"
+                (ngModelChange)="patch('taxId', $event)"
               />
-              <p class="mt-1 text-xs text-slate-500">{{ i18n.t('settings.logoHint') }}</p>
-              @if (service.current().logo) {
-                <button type="button" class="btn-ghost mt-1 hover:text-rose-600" (click)="removeLogo()">
-                  {{ i18n.t('settings.logoRemove') }}
-                </button>
-              }
             </div>
+            <div>
+              <label class="field-label" for="countryCode">{{
+                i18n.t('settings.countryCode')
+              }}</label>
+              <input
+                id="countryCode"
+                name="countryCode"
+                class="field uppercase"
+                maxlength="2"
+                placeholder="FR"
+                [ngModel]="form().countryCode"
+                (ngModelChange)="patch('countryCode', $event)"
+              />
+            </div>
+          </div>
+          <div>
+            <label class="field-label" for="bankDetails">{{
+              i18n.t('settings.bankDetails')
+            }}</label>
+            <input
+              id="bankDetails"
+              name="bankDetails"
+              class="field"
+              placeholder="FR76 …"
+              [ngModel]="form().bankDetails"
+              (ngModelChange)="patch('bankDetails', $event)"
+            />
+          </div>
+        </div>
+      </section>
+
+      <!-- Logo et couleur -->
+      <section class="card p-5">
+        <h2 class="card-title">{{ i18n.t('settings.branding') }}</h2>
+        <p class="mt-1 text-xs text-slate-500">{{ i18n.t('settings.brandingHint') }}</p>
+
+        <div class="mt-4 space-y-4">
+          <div>
+            <span class="field-label">{{ i18n.t('settings.logo') }}</span>
+
+            <!-- Dépôt de fichier : glisser-déposer ou champ classique, au choix -->
+            <label
+              class="drop-zone flex cursor-pointer items-center gap-4 rounded-xl border border-dashed p-3 transition-colors"
+              [class.border-brand-500]="dragging()"
+              [class.bg-brand-50]="dragging()"
+              [class.border-slate-300]="!dragging()"
+              (dragover)="allowDrop($event)"
+              (dragleave)="endDrag($event)"
+              (drop)="dropLogo($event)"
+            >
+              <span
+                class="grid size-20 shrink-0 place-items-center overflow-hidden rounded-lg bg-slate-50 ring-1 ring-slate-200"
+              >
+                @if (form().logo) {
+                  <img class="max-h-16 max-w-16 object-contain" [src]="form().logo" alt="" />
+                } @else {
+                  <span class="text-xs text-slate-500">{{ i18n.t('settings.logoNone') }}</span>
+                }
+              </span>
+
+              <span class="min-w-0">
+                <span class="block text-sm font-medium text-slate-700">
+                  {{ i18n.t('settings.logoDrop') }}
+                </span>
+                <span class="mt-1 block text-xs text-slate-500">{{
+                  i18n.t('settings.logoHint')
+                }}</span>
+                <input
+                  id="logo"
+                  type="file"
+                  class="sr-only"
+                  accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                  (change)="chooseLogo($event)"
+                />
+              </span>
+            </label>
+
+            @if (form().logo) {
+              <button
+                type="button"
+                class="btn-ghost mt-2 hover:text-rose-600"
+                (click)="removeLogo()"
+              >
+                {{ i18n.t('settings.logoRemove') }}
+              </button>
+            }
+          </div>
+
+          <div class="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label class="field-label" for="accentColor">{{
+                i18n.t('settings.accentColor')
+              }}</label>
+              <input
+                id="accentColor"
+                name="accentColor"
+                type="color"
+                class="field h-11 cursor-pointer p-1"
+                [ngModel]="form().accentColor"
+                (ngModelChange)="patch('accentColor', $event)"
+              />
+            </div>
+            <div>
+              <label class="field-label" for="currency">{{ i18n.t('settings.currency') }}</label>
+              <select
+                id="currency"
+                name="currency"
+                class="field"
+                [ngModel]="form().currency"
+                (ngModelChange)="patch('currency', $event)"
+              >
+                @for (currency of currencies; track currency) {
+                  <option [value]="currency">{{ currency }}</option>
+                }
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <span class="field-label">{{ i18n.t('language.label') }}</span>
+            <app-language-switch />
+          </div>
+        </div>
+      </section>
+
+      <!-- Documents et numérotation -->
+      <section class="card p-5">
+        <h2 class="card-title">{{ i18n.t('settings.documents') }}</h2>
+        <p class="mt-1 text-xs text-slate-500">{{ i18n.t('settings.documentsHint') }}</p>
+
+        <div class="mt-4 grid gap-4 sm:grid-cols-3">
+          <div>
+            <label class="field-label" for="invoicePrefix">{{
+              i18n.t('settings.invoicePrefix')
+            }}</label>
+            <input
+              id="invoicePrefix"
+              name="invoicePrefix"
+              class="field uppercase"
+              maxlength="6"
+              required
+              pattern="[A-Za-z]{2,6}"
+              [ngModel]="form().invoicePrefix"
+              (ngModelChange)="patch('invoicePrefix', $event)"
+            />
+            <p class="field-error">{{ i18n.t('settings.error.prefix') }}</p>
+            <p class="num mt-1 text-xs text-slate-500">
+              {{ i18n.t('settings.numberingHint', { next: nextInvoiceNumber() }) }}
+            </p>
+          </div>
+          <div>
+            <label class="field-label" for="quotePrefix">{{
+              i18n.t('settings.quotePrefix')
+            }}</label>
+            <input
+              id="quotePrefix"
+              name="quotePrefix"
+              class="field uppercase"
+              maxlength="6"
+              required
+              pattern="[A-Za-z]{2,6}"
+              [ngModel]="form().quotePrefix"
+              (ngModelChange)="patch('quotePrefix', $event)"
+            />
+            <p class="field-error">{{ i18n.t('settings.error.prefix') }}</p>
+            <p class="num mt-1 text-xs text-slate-500">
+              {{ i18n.t('settings.numberingHint', { next: nextQuoteNumber() }) }}
+            </p>
+          </div>
+          <div>
+            <label class="field-label" for="creditPrefix">{{
+              i18n.t('settings.creditPrefix')
+            }}</label>
+            <input
+              id="creditPrefix"
+              name="creditPrefix"
+              class="field uppercase"
+              maxlength="6"
+              required
+              pattern="[A-Za-z]{2,6}"
+              [ngModel]="form().creditPrefix"
+              (ngModelChange)="patch('creditPrefix', $event)"
+            />
+            <p class="field-error">{{ i18n.t('settings.error.prefix') }}</p>
+            <p class="num mt-1 text-xs text-slate-500">
+              {{ i18n.t('settings.numberingHint', { next: nextCreditNumber() }) }}
+            </p>
           </div>
         </div>
 
-        <div class="grid gap-4 sm:grid-cols-2">
+        <div class="mt-4 grid gap-4 sm:grid-cols-2">
           <div>
-            <label class="field-label" for="accentColor">{{ i18n.t('settings.accentColor') }}</label>
+            <label class="field-label" for="termsDays">{{
+              i18n.t('settings.defaultTermsDays')
+            }}</label>
             <input
-              id="accentColor"
-              name="accentColor"
-              type="color"
-              class="field h-11 cursor-pointer p-1"
-              [(ngModel)]="form.accentColor"
+              id="termsDays"
+              name="termsDays"
+              type="number"
+              min="0"
+              class="field"
+              [ngModel]="form().defaultPaymentTermsDays"
+              (ngModelChange)="patch('defaultPaymentTermsDays', $event ?? 0)"
             />
           </div>
           <div>
-            <label class="field-label" for="currency">{{ i18n.t('settings.currency') }}</label>
-            <select id="currency" name="currency" class="field" [(ngModel)]="form.currency">
-              @for (currency of currencies; track currency) {
-                <option [value]="currency">{{ currency }}</option>
-              }
-            </select>
+            <label class="field-label" for="defaultTerms">{{
+              i18n.t('settings.defaultTerms')
+            }}</label>
+            <input
+              id="defaultTerms"
+              name="defaultTerms"
+              class="field"
+              [ngModel]="form().defaultTerms"
+              (ngModelChange)="patch('defaultTerms', $event)"
+            />
           </div>
         </div>
 
-        <div>
-          <span class="field-label">{{ i18n.t('language.label') }}</span>
-          <app-language-switch />
+        <p class="alert-info mt-4">{{ i18n.t('settings.vatMoved') }}</p>
+      </section>
+
+      <!-- Mentions -->
+      <section class="card p-5">
+        <h2 class="card-title">{{ i18n.t('settings.mentions') }}</h2>
+        <p class="mt-1 text-xs text-slate-500">{{ i18n.t('settings.mentionsHint') }}</p>
+
+        <div class="mt-4 space-y-4">
+          <div>
+            <label class="field-label" for="legalMentions">{{
+              i18n.t('settings.legalMentions')
+            }}</label>
+            <textarea
+              id="legalMentions"
+              name="legalMentions"
+              rows="2"
+              class="field"
+              [ngModel]="form().legalMentions"
+              (ngModelChange)="patch('legalMentions', $event)"
+            ></textarea>
+          </div>
+          <div>
+            <label class="field-label" for="latePaymentMention">{{
+              i18n.t('settings.latePayment')
+            }}</label>
+            <textarea
+              id="latePaymentMention"
+              name="latePaymentMention"
+              rows="2"
+              class="field"
+              [ngModel]="form().latePaymentMention"
+              (ngModelChange)="patch('latePaymentMention', $event)"
+            ></textarea>
+          </div>
+          <div>
+            <label class="field-label" for="vatExemptionMention">
+              {{ i18n.t('settings.vatExemption') }}
+            </label>
+            <input
+              id="vatExemptionMention"
+              name="vatExemptionMention"
+              class="field"
+              [ngModel]="form().vatExemptionMention"
+              (ngModelChange)="patch('vatExemptionMention', $event)"
+            />
+            <p class="mt-1 text-xs text-slate-500">{{ i18n.t('settings.vatExemptionHint') }}</p>
+          </div>
+          <div>
+            <label class="field-label" for="invoiceFooter">{{
+              i18n.t('settings.invoiceFooter')
+            }}</label>
+            <input
+              id="invoiceFooter"
+              name="invoiceFooter"
+              class="field"
+              [ngModel]="form().invoiceFooter"
+              (ngModelChange)="patch('invoiceFooter', $event)"
+            />
+          </div>
+        </div>
+
+        @if (settingsForm.submitted && settingsForm.invalid) {
+          <p class="alert-error mt-4" role="alert">{{ i18n.t('form.incomplete') }}</p>
+        }
+
+        <div class="mt-5 flex items-center justify-end gap-3 border-t border-slate-100 pt-4">
+          <p class="field-required-note mr-auto">{{ i18n.t('form.requiredNote') }}</p>
+          <button type="submit" class="btn-primary">{{ i18n.t('common.save') }}</button>
+        </div>
+      </section>
+    </form>
+
+    <!-- Aperçu : la facture d'exemple suit le brouillon, avant enregistrement -->
+    <aside class="xl:sticky xl:top-4">
+      <div class="card p-4">
+        <h2 class="card-title">{{ i18n.t('settings.preview') }}</h2>
+        <p class="mt-1 text-xs text-slate-500">{{ i18n.t('settings.previewHint') }}</p>
+
+        <div class="mt-3 overflow-hidden rounded-xl bg-slate-100 p-3">
+          <div class="preview-zoom">
+            <app-invoice-preview [invoice]="sample()" [settings]="form()" [actions]="false" />
+          </div>
         </div>
       </div>
-    </section>
-
-    <!-- Documents et numérotation -->
-    <section class="card p-5 lg:col-span-2">
-      <h2 class="text-sm font-semibold text-slate-900">{{ i18n.t('settings.documents') }}</h2>
-
-      <div class="mt-4 grid gap-4 sm:grid-cols-3">
-        <div>
-          <label class="field-label" for="invoicePrefix">{{ i18n.t('settings.invoicePrefix') }}</label>
-          <input id="invoicePrefix" name="invoicePrefix" class="field uppercase" maxlength="6" [(ngModel)]="form.invoicePrefix" />
-          <p class="num mt-1 text-xs text-slate-500">
-            {{ i18n.t('settings.numberingHint', { next: service.nextInvoiceNumber() }) }}
-          </p>
-        </div>
-        <div>
-          <label class="field-label" for="quotePrefix">{{ i18n.t('settings.quotePrefix') }}</label>
-          <input id="quotePrefix" name="quotePrefix" class="field uppercase" maxlength="6" [(ngModel)]="form.quotePrefix" />
-          <p class="num mt-1 text-xs text-slate-500">
-            {{ i18n.t('settings.numberingHint', { next: service.nextQuoteNumber() }) }}
-          </p>
-        </div>
-        <div>
-          <label class="field-label" for="creditPrefix">{{ i18n.t('settings.creditPrefix') }}</label>
-          <input id="creditPrefix" name="creditPrefix" class="field uppercase" maxlength="6" [(ngModel)]="form.creditPrefix" />
-          <p class="num mt-1 text-xs text-slate-500">
-            {{ i18n.t('settings.numberingHint', { next: service.nextCreditNumber() }) }}
-          </p>
-        </div>
-      </div>
-
-      <div class="mt-4 grid gap-4 sm:grid-cols-2">
-        <div>
-          <label class="field-label" for="termsDays">{{ i18n.t('settings.defaultTermsDays') }}</label>
-          <input
-            id="termsDays"
-            name="termsDays"
-            type="number"
-            min="0"
-            class="field"
-            [(ngModel)]="form.defaultPaymentTermsDays"
-          />
-        </div>
-        <div>
-          <label class="field-label" for="defaultTerms">{{ i18n.t('settings.defaultTerms') }}</label>
-          <input id="defaultTerms" name="defaultTerms" class="field" [(ngModel)]="form.defaultTerms" />
-        </div>
-      </div>
-
-      <p class="mt-4 alert-info">{{ i18n.t('settings.vatMoved') }}</p>
-    </section>
-
-    <!-- Mentions -->
-    <section class="card p-5 lg:col-span-2">
-      <h2 class="text-sm font-semibold text-slate-900">{{ i18n.t('settings.mentions') }}</h2>
-
-      <div class="mt-4 space-y-4">
-        <div>
-          <label class="field-label" for="legalMentions">{{ i18n.t('settings.legalMentions') }}</label>
-          <textarea id="legalMentions" name="legalMentions" rows="2" class="field" [(ngModel)]="form.legalMentions"></textarea>
-        </div>
-        <div>
-          <label class="field-label" for="latePaymentMention">{{ i18n.t('settings.latePayment') }}</label>
-          <textarea
-            id="latePaymentMention"
-            name="latePaymentMention"
-            rows="2"
-            class="field"
-            [(ngModel)]="form.latePaymentMention"
-          ></textarea>
-        </div>
-        <div>
-          <label class="field-label" for="vatExemptionMention">{{ i18n.t('settings.vatExemption') }}</label>
-          <input
-            id="vatExemptionMention"
-            name="vatExemptionMention"
-            class="field"
-            [(ngModel)]="form.vatExemptionMention"
-          />
-          <p class="mt-1 text-xs text-slate-500">{{ i18n.t('settings.vatExemptionHint') }}</p>
-        </div>
-        <div>
-          <label class="field-label" for="invoiceFooter">{{ i18n.t('settings.invoiceFooter') }}</label>
-          <input id="invoiceFooter" name="invoiceFooter" class="field" [(ngModel)]="form.invoiceFooter" />
-        </div>
-      </div>
-
-      <div class="mt-5 flex justify-end border-t border-slate-100 pt-4">
-        <button type="submit" class="btn-primary">{{ i18n.t('common.save') }}</button>
-      </div>
-    </section>
-  </form>
+    </aside>
+  </div>
 </div>

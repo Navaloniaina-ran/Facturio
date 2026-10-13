@@ -1,0 +1,24 @@
+/*
+ * L'aperçu est rendu à sa taille réelle puis réduit par `zoom`, qui agit sur la
+ * mise en page : la feuille garde exactement les proportions du document
+ * imprimé, sans le blanc résiduel que laisserait `transform: scale()`.
+ */
+.preview-zoom {
+  zoom: 0.62;
+}
+
+@media (min-width: 1536px) {
+  .preview-zoom {
+    zoom: 0.72;
+  }
+}
+
+/*
+ * Zone de dépôt du logo. Le champ fichier est masqué visuellement mais reste
+ * dans l'ordre de tabulation : `:has()` reporte donc son focus sur la zone
+ * entière, qui est ce que l'on voit.
+ */
+.drop-zone:has(input:focus-visible) {
+  outline: 2px solid var(--color-brand-600, #5b2ff0);
+  outline-offset: 2px;
+}
