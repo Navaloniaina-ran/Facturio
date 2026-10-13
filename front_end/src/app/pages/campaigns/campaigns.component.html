@@ -1,36 +1,57 @@
 <div class="space-y-5">
-  <div class="flex flex-wrap items-end justify-between gap-4">
-    <div>
-      <h1 class="text-xl font-semibold text-slate-900">{{ i18n.vocab('projects') }}</h1>
-      <p class="mt-1 text-sm text-slate-500">
-        {{ i18n.t('campaigns.subtitle', { count: service.list().length, active: service.active().length }) }}
-      </p>
-    </div>
-    <button type="button" class="btn-primary" (click)="openCreate()">{{ i18n.t('campaigns.new') }}</button>
-  </div>
+  <app-page-header
+    icon="campaigns"
+    [title]="i18n.vocab('projects')"
+    [subtitle]="
+      i18n.t('campaigns.subtitle', {
+        count: service.list().length,
+        active: service.active().length,
+      })
+    "
+  >
+    <button type="button" class="btn-primary cursor-pointer" (click)="openCreate()">
+      {{ i18n.t('campaigns.new') }}
+    </button>
+  </app-page-header>
 
   @if (!service.moduleAllowed()) {
-    <p class="rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-800 ring-1 ring-amber-200">
+    <p class="alert-warning">
       {{ i18n.t('campaigns.planNotice') }}
     </p>
   }
 
   @if (message()) {
-    <p class="rounded-xl bg-brand-50 px-4 py-3 text-sm text-brand-800 ring-1 ring-brand-200">{{ message() }}</p>
+    <p class="flash">
+      {{ message() }}
+    </p>
   }
 
-  <div class="flex flex-wrap items-center gap-2">
-    @for (item of tabs; track item) {
-      <button
-        type="button"
-        class="rounded-full px-3.5 py-1.5 text-sm font-medium ring-1 transition"
-        [class]="tab() === item ? 'bg-slate-900 text-white ring-slate-900' : 'bg-white text-slate-600 ring-slate-200 hover:bg-slate-50'"
-        (click)="tab.set(item)"
-      >
-        {{ tabLabel(item) }}
-      </button>
-    }
-  </div>
+  <!-- Barre d'outils : recherche puis segments chiffrés -->
+  <section class="card p-3 sm:p-4">
+    <div class="flex flex-wrap items-center gap-3">
+      <app-search-field
+        [value]="search()"
+        [placeholder]="i18n.t('campaigns.searchPlaceholder')"
+        [label]="i18n.t('campaigns.searchLabel')"
+        [shortcut]="!modal()"
+        (valueChange)="search.set($event)"
+      />
+
+      <app-filter-segments
+        [segments]="filterSegments()"
+        [active]="tab()"
+        [label]="i18n.t('list.filterLabel')"
+        (select)="tab.set($any($event))"
+      />
+    </div>
+
+    <app-result-bar
+      [count]="filtered().length"
+      [total]="service.list().length"
+      [chips]="filterChips()"
+      (reset)="resetFilters()"
+    />
+  </section>
 
   <!-- Cartes de campagne -->
   <div class="grid gap-4 lg:grid-cols-2">
@@ -53,7 +74,9 @@
           <app-status-badge [status]="campaign.status" />
         </div>
 
-        <p class="num mt-4 text-2xl font-semibold text-slate-900">{{ campaign.totalInclVat | amount }}</p>
+        <p class="num mt-4 text-2xl font-semibold text-slate-900">
+          {{ campaign.totalInclVat | amount }}
+        </p>
         <p class="text-xs text-slate-500">
           {{ i18n.t('dashboard.deliverableCount', { count: campaign.deliverableCount }) }}
         </p>
@@ -62,8 +85,14 @@
         <div class="mt-4 grid grid-cols-4 gap-2">
           @for (step of campaign.chain; track step.labelKey) {
             <div class="text-center">
-              <div class="h-1.5 rounded-full" [class]="step.done ? 'bg-emerald-500' : 'bg-slate-200'"></div>
-              <p class="mt-1.5 text-[11px]" [class]="step.done ? 'text-slate-700' : 'text-slate-400'">
+              <div
+                class="h-1.5 rounded-full"
+                [class]="step.done ? 'bg-emerald-500' : 'bg-slate-200'"
+              ></div>
+              <p
+                class="mt-1.5 text-[11px]"
+                [class]="step.done ? 'text-slate-700' : 'text-slate-400'"
+              >
                 {{ i18n.t(step.labelKey) }}
               </p>
             </div>
@@ -92,18 +121,6 @@
               (action)="generateInvoice(campaign)"
             />
           }
-          @if (!campaign.contractSigned) {
-            <app-icon-button
-              icon="contract"
-              [label]="i18n.t('campaigns.attachContract')"
-              (action)="attachContract(campaign)"
-            />
-          }
-          <app-icon-button
-            icon="duplicate"
-            [label]="i18n.t('common.duplicate')"
-            (action)="duplicate(campaign)"
-          />
           @if (campaign.status === 'ACTIVE') {
             <app-icon-button
               icon="close"
@@ -112,10 +129,31 @@
               (action)="closeCampaign(campaign)"
             />
           }
+
+          <span class="ml-auto">
+            <app-action-menu [items]="secondaryActions(campaign)" />
+          </span>
         </div>
       </article>
     } @empty {
-      <p class="card p-8 text-center text-sm text-slate-500 lg:col-span-2">{{ i18n.t('campaigns.empty') }}</p>
+      <div class="empty-state lg:col-span-2">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path [attr.d]="icons.inbox" />
+        </svg>
+        @if (hasFilters()) {
+          <p class="empty-state-title">{{ i18n.t('list.noResult.title') }}</p>
+          <p>{{ i18n.t('list.noResult.hint') }}</p>
+          <button type="button" class="btn-secondary" (click)="resetFilters()">
+            {{ i18n.t('common.resetFilters') }}
+          </button>
+        } @else {
+          <p class="empty-state-title">{{ i18n.t('campaigns.empty.title') }}</p>
+          <p>{{ i18n.t('campaigns.empty.hint') }}</p>
+          <button type="button" class="btn-primary" (click)="openCreate()">
+            {{ i18n.t('campaigns.new') }}
+          </button>
+        }
+      </div>
     }
   </div>
 </div>
@@ -128,19 +166,34 @@
     [wide]="true"
     (closed)="close()"
   >
-    <form class="space-y-6" (ngSubmit)="save()">
+    <form
+      class="space-y-6"
+      novalidate
+      #campaignForm="ngForm"
+      (ngSubmit)="campaignForm.valid && save()"
+    >
       <div class="grid gap-4 sm:grid-cols-2">
         <div>
           <label class="field-label" for="brand">{{ i18n.t('campaigns.form.brand') }}</label>
-          <select id="brand" name="brand" class="field" [(ngModel)]="draft.brandId">
+          <select id="brand" name="brand" class="field" [(ngModel)]="draft.brandId" required>
+            <option value="">{{ i18n.t('form.requiredSelect') }}</option>
             @for (brand of brands(); track brand.id) {
               <option [value]="brand.id">{{ brand.name }}</option>
             }
           </select>
+          <p class="field-error">{{ i18n.t('form.requiredSelect') }}</p>
         </div>
         <div>
           <label class="field-label" for="name">{{ i18n.t('campaigns.form.name') }}</label>
-          <input id="name" name="name" class="field" placeholder="Nike Summer" [(ngModel)]="draft.name" required />
+          <input
+            id="name"
+            name="name"
+            class="field"
+            placeholder="Nike Summer"
+            [(ngModel)]="draft.name"
+            required
+          />
+          <p class="field-error">{{ i18n.t('form.required') }}</p>
         </div>
       </div>
 
@@ -157,12 +210,19 @@
 
       <app-line-editor [lines]="lines" (add)="addLine()" (remove)="removeLine($event)" />
 
-      @if (error()) {
-        <p class="rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700 ring-1 ring-rose-200" role="alert">{{ error() }}</p>
+      @if (campaignForm.submitted && campaignForm.invalid) {
+        <p class="alert-error" role="alert">{{ i18n.t('form.incomplete') }}</p>
       }
 
-      <div class="flex justify-end gap-3">
-        <button type="button" class="btn-secondary" (click)="close()">{{ i18n.t('common.cancel') }}</button>
+      @if (error()) {
+        <p class="alert-error" role="alert">{{ error() }}</p>
+      }
+
+      <div class="flex items-center justify-end gap-3">
+        <p class="field-required-note mr-auto">{{ i18n.t('form.requiredNote') }}</p>
+        <button type="button" class="btn-secondary" (click)="close()">
+          {{ i18n.t('common.cancel') }}
+        </button>
         <button type="submit" class="btn-primary">{{ i18n.t('campaigns.form.submit') }}</button>
       </div>
     </form>
@@ -184,18 +244,22 @@
           {{ i18n.t('campaigns.progress', { value: campaign.progress }) }}
         </span>
         @if (campaign.contractName) {
-          <span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs text-slate-600">{{ campaign.contractName }}</span>
+          <span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs text-slate-600">{{
+            campaign.contractName
+          }}</span>
         }
       </div>
 
       <section>
-        <h3 class="text-sm font-semibold text-slate-900">{{ i18n.vocab('items') }}</h3>
+        <h3 class="card-title">{{ i18n.vocab('items') }}</h3>
         <ul class="mt-2 divide-y divide-slate-100 text-sm">
           @for (deliverable of campaign.deliverables; track deliverable.id) {
             <li class="flex items-center justify-between gap-3 py-2.5">
               <span class="text-slate-700">
                 {{ deliverable.quantity }} × {{ deliverable.description }}
-                <span class="text-xs text-slate-400">({{ i18n.deliverable(deliverable.deliverableType) }})</span>
+                <span class="text-xs text-slate-500"
+                  >({{ i18n.deliverable(deliverable.deliverableType) }})</span
+                >
               </span>
               <span class="num font-medium text-slate-900">
                 {{ deliverable.quantity * deliverable.unitPrice | amount }}
@@ -210,22 +274,35 @@
       </section>
 
       <section>
-        <h3 class="text-sm font-semibold text-slate-900">{{ i18n.t('campaigns.chain') }}</h3>
+        <h3 class="card-title">{{ i18n.t('campaigns.chain') }}</h3>
         <ol class="mt-2 space-y-2 text-sm">
           @for (step of campaign.chain; track step.labelKey) {
             <li class="flex items-center gap-3">
               <span
-                class="grid size-5 place-items-center rounded-full text-[11px] font-bold"
-                [class]="step.done ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-400'"
-              >{{ step.done ? '✓' : '○' }}</span>
-              <span [class]="step.done ? 'text-slate-700' : 'text-slate-400'">{{ i18n.t(step.labelKey) }}</span>
+                class="grid size-5 shrink-0 place-items-center rounded-full ring-1 ring-inset"
+                [class]="
+                  step.done
+                    ? 'bg-emerald-100 text-emerald-700 ring-emerald-200'
+                    : 'bg-white text-transparent ring-slate-200'
+                "
+                aria-hidden="true"
+              >
+                <svg viewBox="0 0 24 24" class="size-3.5 fill-current">
+                  <path [attr.d]="icons.check" />
+                </svg>
+              </span>
+              <span [class]="step.done ? 'text-slate-700' : 'text-slate-400'">{{
+                i18n.t(step.labelKey)
+              }}</span>
             </li>
           }
         </ol>
       </section>
 
       <section>
-        <h3 class="text-sm font-semibold text-slate-900">{{ i18n.t('campaigns.linkedInvoices') }}</h3>
+        <h3 class="card-title">
+          {{ i18n.t('campaigns.linkedInvoices') }}
+        </h3>
         <ul class="mt-2 divide-y divide-slate-100 text-sm">
           @for (invoice of campaign.invoices; track invoice.id) {
             <li class="flex items-center justify-between gap-3 py-2">

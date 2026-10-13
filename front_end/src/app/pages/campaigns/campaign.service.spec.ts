@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { Observable } from 'rxjs';
 import { addDays, today } from '../../core/calculations';
 import { Line } from '../../core/models';
 import { WorkspaceStore } from '../../core/workspace-store.service';
@@ -16,6 +17,13 @@ function deliverable(id: string): Line {
     discountValue: 0,
     vatRate: 20,
   };
+}
+
+/** Les actions passent par l'API : ici elles répondent tout de suite. */
+function run<T>(source: Observable<T>): T {
+  let received!: T;
+  source.subscribe((value) => (received = value));
+  return received;
 }
 
 describe('CampaignService', () => {
@@ -52,7 +60,7 @@ describe('CampaignService', () => {
   it('generates an invoice from the campaign with no re-entry', () => {
     const glow = service.list().find((c) => c.name === 'Glow — routine automne')!;
 
-    const result = service.generateInvoice(glow.id);
+    const result = run(service.generateInvoice(glow.id));
 
     expect(result.ok).toBe(true);
     expect(result.value?.campaignId).toBe(glow.id);
@@ -65,7 +73,7 @@ describe('CampaignService', () => {
     const campaign = service.list().find((c) => c.name === 'Glow — routine automne')!;
     const before = quotes.list().length;
 
-    expect(service.generateQuote(campaign.id).ok).toBe(true);
+    expect(run(service.generateQuote(campaign.id)).ok).toBe(true);
     expect(quotes.list().length).toBe(before + 1);
     expect(service.byId(campaign.id)?.status).toBe('PENDING');
   });
@@ -73,7 +81,7 @@ describe('CampaignService', () => {
   it('refuses to close when a linked invoice is neither paid nor cancelled', () => {
     const nike = service.list().find((c) => c.name === 'Nike Summer')!;
 
-    const result = service.close(nike.id);
+    const result = run(service.close(nike.id));
 
     expect(result.ok).toBe(false);
     expect(result.errorKey).toBe('campaign.error.closeBlocked');
@@ -82,7 +90,7 @@ describe('CampaignService', () => {
   it('closes a campaign whose invoices are all paid', () => {
     const kama = service.list().find((c) => c.name === 'Lancement Studio Kama')!;
 
-    expect(service.close(kama.id).ok).toBe(true);
+    expect(run(service.close(kama.id)).ok).toBe(true);
     expect(service.byId(kama.id)?.status).toBe('COMPLETED');
   });
 
@@ -90,20 +98,22 @@ describe('CampaignService', () => {
     const source = service.list()[0];
     const before = store.campaigns().length;
 
-    service.duplicate(source.id);
+    run(service.duplicate(source.id));
 
     expect(store.campaigns().length).toBe(before + 1);
     expect(service.list().some((c) => c.name === `${source.name} (copie)`)).toBe(true);
   });
 
   it('creates a campaign with its deliverables', () => {
-    const result = service.create({
-      brandId: 'b1',
-      name: 'Rentrée 2026',
-      startDate: today(),
-      endDate: addDays(today(), 20),
-      deliverables: [deliverable('l1')],
-    });
+    const result = run(
+      service.create({
+        brandId: 'b1',
+        name: 'Rentrée 2026',
+        startDate: today(),
+        endDate: addDays(today(), 20),
+        deliverables: [deliverable('l1')],
+      }),
+    );
 
     expect(result.ok).toBe(true);
     expect(service.list().find((c) => c.name === 'Rentrée 2026')?.totalExclVat).toBe(600);
@@ -111,13 +121,15 @@ describe('CampaignService', () => {
 
   it('refuses a campaign without a deliverable', () => {
     expect(
-      service.create({
-        brandId: 'b1',
-        name: 'Empty',
-        startDate: today(),
-        endDate: today(),
-        deliverables: [],
-      }).errorKey,
+      run(
+        service.create({
+          brandId: 'b1',
+          name: 'Empty',
+          startDate: today(),
+          endDate: today(),
+          deliverables: [],
+        }),
+      ).errorKey,
     ).toBe('campaign.error.noDeliverable');
   });
 

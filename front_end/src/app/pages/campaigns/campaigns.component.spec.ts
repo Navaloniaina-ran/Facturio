@@ -9,7 +9,7 @@ describe('CampaignsComponent', () => {
     localStorage.clear();
     await TestBed.configureTestingModule({
       imports: [CampaignsComponent],
-      providers: [provideRouter([{ path: 'app/factures', children: [] }])],
+      providers: [provideRouter([{ path: 'createur/factures', children: [] }])],
     }).compileComponents();
     TestBed.inject(I18nService).setLanguage('fr');
   });
@@ -34,12 +34,18 @@ describe('CampaignsComponent', () => {
 
   it('filters on active campaigns', async () => {
     const fixture = await create();
-    const button = [...fixture.nativeElement.querySelectorAll('button')].find(
-      (b) => (b as HTMLButtonElement).textContent?.trim() === 'Active',
-    ) as HTMLButtonElement;
+    // Le segment porte désormais son effectif à côté de son libellé.
+    const button = [...fixture.nativeElement.querySelectorAll('app-filter-segments button')].find(
+      (b) => (b as HTMLButtonElement).textContent?.trim().startsWith('Active'),
+    ) as HTMLButtonElement | undefined;
 
-    button.click();
+    expect(button).toBeDefined();
+    expect(button!.getAttribute('aria-pressed')).toBe('false');
+
+    button!.click();
     await fixture.whenStable();
+
+    expect(button!.getAttribute('aria-pressed')).toBe('true');
 
     expect(fixture.nativeElement.querySelectorAll('article').length).toBe(
       TestBed.inject(CampaignService).active().length,
@@ -84,8 +90,6 @@ describe('CampaignsComponent', () => {
     const text = fixture.nativeElement.textContent as string;
     expect(text).toContain('Quote');
     expect(text).toContain('Contract');
-    expect(
-      fixture.nativeElement.querySelector('[title="Generate the invoice"]'),
-    ).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('[title="Generate the invoice"]')).toBeTruthy();
   });
 });
