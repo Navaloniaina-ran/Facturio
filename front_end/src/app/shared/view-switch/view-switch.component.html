@@ -1,0 +1,40 @@
+<div
+  class="flex gap-1 rounded-xl bg-white p-1 ring-1 ring-slate-200"
+  role="group"
+  [attr.aria-label]="i18n.t('list.view.label')"
+>
+  <button
+    type="button"
+    class="grid size-9 cursor-pointer place-items-center rounded-lg transition"
+    [class]="
+      value() === 'table'
+        ? 'bg-slate-900 text-white'
+        : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+    "
+    [title]="i18n.t('list.view.table')"
+    [attr.aria-label]="i18n.t('list.view.table')"
+    [attr.aria-pressed]="value() === 'table'"
+    (click)="valueChange.emit('table')"
+  >
+    <svg viewBox="0 0 24 24" class="size-4 fill-current" aria-hidden="true">
+      <path d="M3 5h18v14H3V5zm2 2v3h6V7H5zm8 0v3h6V7h-6zM5 12v5h6v-5H5zm8 0v5h6v-5h-6z" />
+    </svg>
+  </button>
+  <button
+    type="button"
+    class="grid size-9 cursor-pointer place-items-center rounded-lg transition"
+    [class]="
+      value() === 'grid'
+        ? 'bg-slate-900 text-white'
+        : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+    "
+    [title]="i18n.t('list.view.grid')"
+    [attr.aria-label]="i18n.t('list.view.grid')"
+    [attr.aria-pressed]="value() === 'grid'"
+    (click)="valueChange.emit('grid')"
+  >
+    <svg viewBox="0 0 24 24" class="size-4 fill-current" aria-hidden="true">
+      <path d="M4 4h7v7H4V4zm9 0h7v7h-7V4zM4 13h7v7H4v-7zm9 0h7v7h-7v-7z" />
+    </svg>
+  </button>
+</div>

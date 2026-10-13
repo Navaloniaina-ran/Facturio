@@ -1,0 +1,41 @@
+<div class="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-3">
+  <div class="flex flex-wrap items-center gap-2">
+    <p class="num text-xs text-slate-500" aria-live="polite">
+      {{ i18n.t('list.results', { count: count(), total: total() }) }}
+    </p>
+
+    @for (chip of chips(); track chip.label) {
+      <span
+        class="inline-flex items-center gap-1.5 rounded-full py-1 pr-1 pl-2.5 text-xs font-medium ring-1"
+        [class]="
+          (chip.tone ?? 'neutral') === 'brand'
+            ? 'bg-brand-50 text-brand-800 ring-brand-200'
+            : 'bg-slate-100 text-slate-700 ring-slate-200'
+        "
+      >
+        {{ chip.label }}
+        <button
+          type="button"
+          class="grid size-4 cursor-pointer place-items-center rounded-full transition"
+          [class]="
+            (chip.tone ?? 'neutral') === 'brand'
+              ? 'text-brand-600 hover:bg-brand-200/70 hover:text-brand-900'
+              : 'text-slate-500 hover:bg-slate-300/70 hover:text-slate-900'
+          "
+          [attr.aria-label]="i18n.t('list.removeFilter')"
+          (click)="chip.clear()"
+        >
+          <svg viewBox="0 0 24 24" class="size-3 fill-current" aria-hidden="true">
+            <path [attr.d]="icons.dismiss" />
+          </svg>
+        </button>
+      </span>
+    }
+  </div>
+
+  @if (chips().length) {
+    <button type="button" class="btn-ghost cursor-pointer" (click)="reset.emit()">
+      {{ i18n.t('common.resetFilters') }}
+    </button>
+  }
+</div>

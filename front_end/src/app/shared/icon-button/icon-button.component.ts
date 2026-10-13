@@ -13,7 +13,6 @@ export type IconTone = 'neutral' | 'brand' | 'success' | 'danger';
   selector: 'app-icon-button',
   imports: [RouterLink],
   templateUrl: './icon-button.component.html',
-  styleUrl: './icon-button.component.css',
 })
 export class IconButtonComponent {
   readonly icon = input.required<IconName>();

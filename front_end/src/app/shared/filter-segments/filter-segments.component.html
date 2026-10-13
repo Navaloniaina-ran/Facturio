@@ -1,0 +1,30 @@
+<div
+  class="flex flex-wrap gap-1 rounded-xl bg-white p-1 ring-1 ring-slate-200"
+  role="group"
+  [attr.aria-label]="label()"
+>
+  @for (segment of segments(); track segment.key) {
+    <button
+      type="button"
+      class="inline-flex cursor-pointer items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-medium transition"
+      [class]="
+        active() === segment.key
+          ? 'bg-slate-900 text-white'
+          : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+      "
+      [attr.aria-pressed]="active() === segment.key"
+      (click)="select.emit(segment.key)"
+    >
+      {{ segment.label }}
+      @if (segment.count !== undefined) {
+        <span
+          class="num rounded-md px-1.5 text-xs font-semibold"
+          [class]="
+            active() === segment.key ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'
+          "
+          >{{ segment.count }}</span
+        >
+      }
+    </button>
+  }
+</div>

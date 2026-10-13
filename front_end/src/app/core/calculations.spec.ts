@@ -74,7 +74,10 @@ describe('calculations', () => {
 
   it('spreads an overall discount across the VAT rates', () => {
     const totals = computeTotals(
-      [line({ id: 'a', unitPrice: 800, vatRate: 20 }), line({ id: 'b', unitPrice: 200, vatRate: 0 })],
+      [
+        line({ id: 'a', unitPrice: 800, vatRate: 20 }),
+        line({ id: 'b', unitPrice: 200, vatRate: 0 }),
+      ],
       { type: 'PERCENT', value: 10 },
     );
 
@@ -145,8 +148,24 @@ describe('calculations', () => {
   it('computes the outstanding balance after two partial payments', () => {
     const target = invoice();
     const payments: Payment[] = [
-      { id: 'p1', invoiceId: 'i1', amount: 1000, date: '2026-08-05', method: 'TRANSFER', reference: '', note: '' },
-      { id: 'p2', invoiceId: 'i1', amount: 1000, date: '2026-08-12', method: 'TRANSFER', reference: '', note: '' },
+      {
+        id: 'p1',
+        invoiceId: 'i1',
+        amount: 1000,
+        date: '2026-08-05',
+        method: 'TRANSFER',
+        reference: '',
+        note: '',
+      },
+      {
+        id: 'p2',
+        invoiceId: 'i1',
+        amount: 1000,
+        date: '2026-08-12',
+        method: 'TRANSFER',
+        reference: '',
+        note: '',
+      },
     ];
 
     expect(paidAmount('i1', payments)).toBe(2000);
@@ -166,7 +185,15 @@ describe('calculations', () => {
   it('turns paid and drops the delay as soon as the balance is zero', () => {
     const target = invoice({ dueDate: '2026-08-01' });
     const payments: Payment[] = [
-      { id: 'p1', invoiceId: 'i1', amount: 3000, date: '2026-08-03', method: 'CARD', reference: '', note: '' },
+      {
+        id: 'p1',
+        invoiceId: 'i1',
+        amount: 3000,
+        date: '2026-08-03',
+        method: 'CARD',
+        reference: '',
+        note: '',
+      },
     ];
 
     expect(recomputeStatus(target, payments, '2026-08-14')).toBe('PAID');
@@ -189,7 +216,15 @@ describe('calculations', () => {
   it('computes the average payment delay over settled invoices', () => {
     const target = invoice({ issueDate: '2026-08-01' });
     const payments: Payment[] = [
-      { id: 'p1', invoiceId: 'i1', amount: 3000, date: '2026-08-11', method: 'TRANSFER', reference: '', note: '' },
+      {
+        id: 'p1',
+        invoiceId: 'i1',
+        amount: 3000,
+        date: '2026-08-11',
+        method: 'TRANSFER',
+        reference: '',
+        note: '',
+      },
     ];
 
     expect(averagePaymentDelay([target], payments)).toBe(10);

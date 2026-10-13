@@ -1,19 +1,25 @@
 <a
   [routerLink]="link()"
   [queryParams]="queryParams()"
-  class="group relative block overflow-hidden rounded-2xl bg-white p-5 ring-1 ring-slate-200/80 transition hover:-translate-y-0.5 hover:shadow-lg hover:shadow-slate-200/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
+  class="group relative block overflow-hidden rounded-2xl p-5 ring-1 transition hover:-translate-y-0.5 hover:shadow-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
+  [class]="frame()"
 >
-  <span class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r" [class]="accent()"></span>
+  <span class="absolute inset-x-0 top-0 bg-gradient-to-r" [class]="accent()"></span>
 
   <p class="text-xs font-semibold tracking-wide text-slate-500 uppercase">{{ label() }}</p>
-  <p class="mt-2 text-2xl font-semibold text-slate-900 tabular-nums">{{ value() }}</p>
+  <p class="mt-2 font-semibold text-slate-900 tabular-nums" [class]="valueSize()">
+    {{ value() }}
+  </p>
 
   @if (detail()) {
     <p class="mt-1 text-xs text-slate-500">{{ detail() }}</p>
   }
 
-  <span
-    class="absolute right-4 bottom-4 text-slate-300 opacity-0 transition group-hover:opacity-100"
+  <svg
+    viewBox="0 0 24 24"
+    class="absolute right-4 bottom-4 size-4 fill-slate-300 transition-all duration-200 group-hover:translate-x-0.5 group-hover:fill-brand-500"
     aria-hidden="true"
-  >→</span>
+  >
+    <path [attr.d]="icons.arrowRight" />
+  </svg>
 </a>

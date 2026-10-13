@@ -12,13 +12,7 @@ export type CampaignStatus = 'DRAFT' | 'PENDING' | 'ACTIVE' | 'COMPLETED' | 'CAN
 
 export type QuoteStatus = 'DRAFT' | 'SENT' | 'ACCEPTED' | 'REFUSED' | 'EXPIRED' | 'INVOICED';
 
-export type InvoiceStatus =
-  | 'DRAFT'
-  | 'SENT'
-  | 'PARTIALLY_PAID'
-  | 'PAID'
-  | 'OVERDUE'
-  | 'CANCELLED';
+export type InvoiceStatus = 'DRAFT' | 'SENT' | 'PARTIALLY_PAID' | 'PAID' | 'OVERDUE' | 'CANCELLED';
 
 export type PaymentMethod = 'TRANSFER' | 'MOBILE_MONEY' | 'CARD' | 'CASH' | 'PAYPAL';
 
@@ -64,6 +58,8 @@ export interface Brand {
   email: string;
   phone: string;
   address: string;
+  /** Code pays ISO 3166-1 alpha-2, requis par la facture électronique. */
+  countryCode: string;
   paymentTermsDays: number;
   notes: string;
   /** Suspend les relances automatiques pour cette marque. */
@@ -183,6 +179,8 @@ export interface Settings {
   /** Nom affiché sur les documents. */
   businessName: string;
   address: string;
+  /** Code pays ISO 3166-1 alpha-2 de l'émetteur. */
+  countryCode: string;
   taxId: string;
   bankDetails: string;
   /** Logo en data URI, affiché sur la facture. */
@@ -231,12 +229,7 @@ export interface PlatformInvoice {
 export type CollaborationType = 'SPONSORED' | 'AMBASSADOR' | 'UGC' | 'EVENT' | 'AFFILIATE';
 
 export type CollaborationStage =
-  | 'PROSPECT'
-  | 'NEGOTIATION'
-  | 'CONTRACT'
-  | 'IN_PROGRESS'
-  | 'DONE'
-  | 'LOST';
+  'PROSPECT' | 'NEGOTIATION' | 'CONTRACT' | 'IN_PROGRESS' | 'DONE' | 'LOST';
 
 /** Suivi amont d'une collaboration, avant qu'elle devienne une campagne. */
 export interface Collaboration {

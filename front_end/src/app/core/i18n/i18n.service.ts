@@ -1,4 +1,5 @@
-import { Injectable, computed, signal } from '@angular/core';
+import { Injectable, computed, inject, signal } from '@angular/core';
+import { AuthService } from '../auth.service';
 import { WorkspaceType } from '../models';
 import { DICTIONARY, LANGUAGES, Language } from './translations';
 
@@ -11,6 +12,7 @@ const STORAGE_KEY = 'facturio.language';
  */
 @Injectable({ providedIn: 'root' })
 export class I18nService {
+  private readonly auth = inject(AuthService);
   private readonly current = signal<Language>(this.readStored());
 
   readonly language = this.current.asReadonly();
@@ -94,8 +96,13 @@ export class I18nService {
     return this.t(`collabType.${code}`);
   }
 
-  /** Libellé métier dépendant du type d'espace de travail. */
-  vocab(key: string, workspace: WorkspaceType = 'CREATOR'): string {
+  /**
+   * Libellé métier dépendant du type d'espace de travail : une PME parle de
+   * « Clients » et de « Projets » là où un créateur parle de « Marques » et de
+   * « Campagnes ». Sans argument, on suit l'espace de la session en cours,
+   * ce qui fait basculer toute l'interface d'un profil à l'autre.
+   */
+  vocab(key: string, workspace: WorkspaceType = this.auth.workspaceType()): string {
     return this.t(`vocab.${workspace}.${key}`);
   }
 

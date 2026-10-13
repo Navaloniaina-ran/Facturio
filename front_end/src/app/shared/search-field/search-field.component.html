@@ -1,0 +1,41 @@
+<div class="relative min-w-64 flex-1 lg:max-w-md">
+  <svg
+    viewBox="0 0 24 24"
+    class="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 fill-slate-400"
+    aria-hidden="true"
+  >
+    <path [attr.d]="icons.search" />
+  </svg>
+
+  <input
+    #field
+    class="field h-11 pr-11 pl-10"
+    type="search"
+    name="search"
+    autocomplete="off"
+    [placeholder]="placeholder()"
+    [attr.aria-label]="label()"
+    [ngModel]="value()"
+    (ngModelChange)="valueChange.emit($event)"
+  />
+
+  @if (value()) {
+    <button
+      type="button"
+      class="absolute top-1/2 right-2.5 grid size-7 -translate-y-1/2 cursor-pointer place-items-center rounded-lg text-slate-500 transition hover:bg-slate-200/70 hover:text-slate-900"
+      [title]="i18n.t('list.clearSearch')"
+      [attr.aria-label]="i18n.t('list.clearSearch')"
+      (click)="clear()"
+    >
+      <svg viewBox="0 0 24 24" class="size-4 fill-current" aria-hidden="true">
+        <path [attr.d]="icons.dismiss" />
+      </svg>
+    </button>
+  } @else if (shortcut()) {
+    <kbd
+      class="pointer-events-none absolute top-1/2 right-3 hidden -translate-y-1/2 rounded-md bg-white px-1.5 py-0.5 font-sans text-[11px] font-semibold text-slate-500 ring-1 ring-slate-200 sm:block"
+      [title]="i18n.t('list.searchHint')"
+      >/</kbd
+    >
+  }
+</div>

@@ -7,12 +7,14 @@
   ></button>
 
   <div
-    class="relative flex max-h-[92vh] w-full flex-col overflow-hidden rounded-t-3xl bg-white shadow-2xl sm:rounded-3xl"
+    class="relative flex max-h-[92vh] w-full flex-col overflow-hidden rounded-t-2xl bg-white shadow-2xl sm:rounded-2xl"
     [class]="wide() ? 'sm:max-w-3xl' : 'sm:max-w-lg'"
     role="dialog"
     aria-modal="true"
   >
-    <header class="flex shrink-0 items-start justify-between gap-4 border-b border-slate-100 px-6 py-5">
+    <header
+      class="flex shrink-0 items-start justify-between gap-4 border-b border-slate-100 px-6 py-5"
+    >
       <div>
         <h2 class="text-lg font-semibold text-slate-900">{{ title() }}</h2>
         @if (subtitle()) {
@@ -21,13 +23,11 @@
       </div>
       <button
         type="button"
-        class="grid size-9 place-items-center rounded-xl text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+        class="icon-btn -mt-1 -mr-1 size-9"
         [attr.aria-label]="i18n.t('common.close')"
         (click)="closed.emit()"
       >
-        <svg viewBox="0 0 24 24" class="size-5 fill-current" aria-hidden="true">
-          <path d="M6.4 5 5 6.4l5.6 5.6L5 17.6 6.4 19l5.6-5.6 5.6 5.6 1.4-1.4-5.6-5.6L19 6.4 17.6 5 12 10.6z" />
-        </svg>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path [attr.d]="icons.dismiss" /></svg>
       </button>
     </header>
 

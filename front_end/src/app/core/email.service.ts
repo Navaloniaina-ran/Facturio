@@ -25,7 +25,10 @@ export class EmailService {
   private readonly i18n = inject(I18nService);
 
   readonly history = computed(() =>
-    this.store.emails().slice().sort((a, b) => b.sentAt.localeCompare(a.sentAt)),
+    this.store
+      .emails()
+      .slice()
+      .sort((a, b) => b.sentAt.localeCompare(a.sentAt)),
   );
 
   historyFor(documentId: string): EmailLog[] {

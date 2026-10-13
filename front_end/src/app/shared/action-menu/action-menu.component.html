@@ -1,0 +1,35 @@
+<div class="relative">
+  <button
+    type="button"
+    class="icon-btn"
+    [class.is-open]="open()"
+    [attr.aria-label]="i18n.t('common.moreActions')"
+    [attr.aria-expanded]="open()"
+    aria-haspopup="menu"
+    (click)="toggle($event)"
+  >
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path [attr.d]="icons.more" /></svg>
+  </button>
+
+  @if (open()) {
+    <div
+      class="action-menu"
+      [class.align-end]="alignEnd()"
+      role="menu"
+      [attr.aria-label]="i18n.t('common.moreActions')"
+    >
+      @for (item of visible(); track item.label) {
+        <button
+          type="button"
+          class="action-menu-item"
+          [class]="'tone-' + (item.tone ?? 'neutral')"
+          role="menuitem"
+          (click)="select(item)"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path [attr.d]="icons[item.icon]" /></svg>
+          {{ item.label }}
+        </button>
+      }
+    </div>
+  }
+</div>

@@ -56,6 +56,7 @@ export const DEMO_CREATOR: Creator = {
 export const DEMO_SETTINGS: Settings = {
   businessName: 'Toky Raherimana',
   address: '18 rue des Créateurs, 75011 Paris',
+  countryCode: 'FR',
   taxId: 'FR 42 123 456 789',
   bankDetails: '',
   logo: null,
@@ -84,9 +85,33 @@ export const DEMO_SUBSCRIPTION: Subscription = {
 };
 
 export const DEMO_PLATFORM_INVOICES: PlatformInvoice[] = [
-  { id: 'pi3', number: 'SAAS-2026-0003', date: D(-2), plan: 'PRO', cycle: 'MONTHLY', amount: 19, status: 'PAID' },
-  { id: 'pi2', number: 'SAAS-2026-0002', date: D(-32), plan: 'PRO', cycle: 'MONTHLY', amount: 19, status: 'PAID' },
-  { id: 'pi1', number: 'SAAS-2026-0001', date: D(-62), plan: 'FREE', cycle: 'MONTHLY', amount: 0, status: 'PAID' },
+  {
+    id: 'pi3',
+    number: 'SAAS-2026-0003',
+    date: D(-2),
+    plan: 'PRO',
+    cycle: 'MONTHLY',
+    amount: 19,
+    status: 'PAID',
+  },
+  {
+    id: 'pi2',
+    number: 'SAAS-2026-0002',
+    date: D(-32),
+    plan: 'PRO',
+    cycle: 'MONTHLY',
+    amount: 19,
+    status: 'PAID',
+  },
+  {
+    id: 'pi1',
+    number: 'SAAS-2026-0001',
+    date: D(-62),
+    plan: 'FREE',
+    cycle: 'MONTHLY',
+    amount: 0,
+    status: 'PAID',
+  },
 ];
 
 export const DEMO_BRANDS: Brand[] = [
@@ -97,6 +122,7 @@ export const DEMO_BRANDS: Brand[] = [
     email: 'lea.moreau@nike.example',
     phone: '+33 1 45 67 89 01',
     address: '12 rue du Sport, 75011 Paris',
+    countryCode: 'FR',
     paymentTermsDays: 30,
     notes: 'Collaboration récurrente chaque été.',
     remindersPaused: false,
@@ -108,6 +134,7 @@ export const DEMO_BRANDS: Brand[] = [
     email: 'amine@glow.example',
     phone: '+33 6 12 34 56 78',
     address: '4 avenue des Lilas, 69003 Lyon',
+    countryCode: 'FR',
     paymentTermsDays: 15,
     notes: 'Paie souvent en retard, prévoir un acompte.',
     remindersPaused: false,
@@ -119,6 +146,7 @@ export const DEMO_BRANDS: Brand[] = [
     email: 'contact@studiokama.example',
     phone: '+261 34 12 345 67',
     address: 'Lot II B 45, Antananarivo',
+    countryCode: 'MG',
     paymentTermsDays: 30,
     notes: '',
     remindersPaused: false,
@@ -357,20 +385,95 @@ export const DEMO_INVOICES: Invoice[] = [
 ];
 
 export const DEMO_PAYMENTS: Payment[] = [
-  { id: 'p1', invoiceId: 'i1', amount: 900, date: D(-15), method: 'TRANSFER', reference: 'VIR-88213', note: 'Acompte 50 %' },
-  { id: 'p2', invoiceId: 'i3', amount: 1200, date: D(-14), method: 'MOBILE_MONEY', reference: 'MVOLA-4471', note: '' },
-  { id: 'p3', invoiceId: 'i5', amount: 900, date: D(-60), method: 'PAYPAL', reference: 'PP-2210', note: '' },
-  { id: 'p4', invoiceId: 'i6', amount: 1300, date: D(-235), method: 'TRANSFER', reference: 'VIR-70211', note: '' },
-  { id: 'p5', invoiceId: 'i7', amount: 840, date: D(-305), method: 'TRANSFER', reference: 'VIR-69004', note: '' },
+  {
+    id: 'p1',
+    invoiceId: 'i1',
+    amount: 900,
+    date: D(-15),
+    method: 'TRANSFER',
+    reference: 'VIR-88213',
+    note: 'Acompte 50 %',
+  },
+  {
+    id: 'p2',
+    invoiceId: 'i3',
+    amount: 1200,
+    date: D(-14),
+    method: 'MOBILE_MONEY',
+    reference: 'MVOLA-4471',
+    note: '',
+  },
+  {
+    id: 'p3',
+    invoiceId: 'i5',
+    amount: 900,
+    date: D(-60),
+    method: 'PAYPAL',
+    reference: 'PP-2210',
+    note: '',
+  },
+  {
+    id: 'p4',
+    invoiceId: 'i6',
+    amount: 1300,
+    date: D(-235),
+    method: 'TRANSFER',
+    reference: 'VIR-70211',
+    note: '',
+  },
+  {
+    id: 'p5',
+    invoiceId: 'i7',
+    amount: 840,
+    date: D(-305),
+    method: 'TRANSFER',
+    reference: 'VIR-69004',
+    note: '',
+  },
 ];
 
 /** Scénario de relance par défaut (P03). */
 export const DEMO_REMINDER_STEPS: ReminderStep[] = [
-  { id: 'r1', labelKey: 'step.beforeDue3', offsetDays: -3, channel: 'EMAIL', templateKey: 'template.gentle', active: true },
-  { id: 'r2', labelKey: 'step.dueDay', offsetDays: 0, channel: 'EMAIL', templateKey: 'template.dueDate', active: true },
-  { id: 'r3', labelKey: 'step.after3', offsetDays: 3, channel: 'EMAIL', templateKey: 'template.firstOverdue', active: true },
-  { id: 'r4', labelKey: 'step.after7', offsetDays: 7, channel: 'EMAIL', templateKey: 'template.firm', active: true },
-  { id: 'r5', labelKey: 'step.after15', offsetDays: 15, channel: 'EMAIL', templateKey: 'template.formalNotice', active: false },
+  {
+    id: 'r1',
+    labelKey: 'step.beforeDue3',
+    offsetDays: -3,
+    channel: 'EMAIL',
+    templateKey: 'template.gentle',
+    active: true,
+  },
+  {
+    id: 'r2',
+    labelKey: 'step.dueDay',
+    offsetDays: 0,
+    channel: 'EMAIL',
+    templateKey: 'template.dueDate',
+    active: true,
+  },
+  {
+    id: 'r3',
+    labelKey: 'step.after3',
+    offsetDays: 3,
+    channel: 'EMAIL',
+    templateKey: 'template.firstOverdue',
+    active: true,
+  },
+  {
+    id: 'r4',
+    labelKey: 'step.after7',
+    offsetDays: 7,
+    channel: 'EMAIL',
+    templateKey: 'template.firm',
+    active: true,
+  },
+  {
+    id: 'r5',
+    labelKey: 'step.after15',
+    offsetDays: 15,
+    channel: 'EMAIL',
+    templateKey: 'template.formalNotice',
+    active: false,
+  },
 ];
 
 export const DEMO_COLLABORATIONS: Collaboration[] = [

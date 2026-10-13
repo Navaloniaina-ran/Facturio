@@ -1,0 +1,14 @@
+services:
+  postgres:
+    image: 'postgres:latest'
+    environment:
+      - 'POSTGRES_DB=facturio'
+      - 'POSTGRES_PASSWORD=facturio'
+      - 'POSTGRES_USER=facturio'
+    ports:
+      - '5432:5432'
+    volumes:
+      - 'facturio_postgres_data:/var/lib/postgresql/data'
+
+volumes:
+  facturio_postgres_data:

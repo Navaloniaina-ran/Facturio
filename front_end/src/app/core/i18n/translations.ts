@@ -13,6 +13,7 @@ export const DICTIONARY = {
   // ----- Général -----
   'app.name': ['Facturio', 'Facturio'],
   'app.space': ['Espace Créateur', 'Creator space'],
+  'app.businessSpace': ['Espace Entreprise', 'Business space'],
   'common.cancel': ['Annuler', 'Cancel'],
   'common.save': ['Enregistrer', 'Save'],
   'common.close': ['Fermer', 'Close'],
@@ -28,7 +29,52 @@ export const DICTIONARY = {
   'common.delete': ['Supprimer', 'Delete'],
   'common.edit': ['Modifier', 'Edit'],
   'common.send': ['Envoyer', 'Send'],
+  'common.moreActions': ['Autres actions', 'More actions'],
+  'common.resetFilters': ['Réinitialiser les filtres', 'Clear filters'],
+
+  // ----- États vides partagés par les listes -----
+  'list.results': ['{count} sur {total} affiché(s)', '{count} of {total} shown'],
+  'list.searchChip': ['« {term} »', '“{term}”'],
+  'list.searchHint': ['Appuyez sur / pour rechercher', 'Press / to search'],
+  'list.clearSearch': ['Effacer la recherche', 'Clear search'],
+  'list.removeFilter': ['Retirer ce filtre', 'Remove this filter'],
+  'list.filterLabel': ['Filtrer la liste', 'Filter the list'],
+  'list.view.label': ['Affichage', 'Display'],
+  'list.view.table': ['Vue tableau', 'Table view'],
+  'list.view.grid': ['Vue cartes', 'Card view'],
+  'list.noResult.title': ['Aucun résultat', 'No result'],
+  'list.noResult.hint': [
+    'Aucun élément ne correspond au filtre ou à la recherche en cours.',
+    'Nothing matches the current filter or search.',
+  ],
+  'invoices.empty.title': ['Aucune facture', 'No invoice yet'],
+  'invoices.empty.hint': [
+    'Facturez une campagne ou partez d’une facture vierge : le numéro et l’échéance se calculent seuls.',
+    'Invoice a campaign or start from a blank invoice — the number and due date are computed for you.',
+  ],
+  'quotes.empty.title': ['Aucune proposition', 'No quote yet'],
+  'quotes.empty.hint': [
+    'Une proposition acceptée se convertit en facture d’un seul geste.',
+    'An accepted quote converts into an invoice in one move.',
+  ],
+  'campaigns.empty.title': ['Aucune campagne', 'No campaign yet'],
+  'campaigns.empty.hint': [
+    'Une campagne regroupe les livrables d’une marque, puis produit sa proposition et sa facture.',
+    'A campaign groups a brand’s deliverables, then produces its quote and invoice.',
+  ],
   'language.label': ['Langue', 'Language'],
+
+  // ----- Formulaires : messages de saisie partagés -----
+  'form.required': ['Ce champ est obligatoire.', 'This field is required.'],
+  'form.requiredSelect': ['Faites un choix.', 'Make a selection.'],
+  'form.email': ['Renseignez une adresse e-mail valide.', 'Enter a valid email address.'],
+  'form.minLength8': ['8 caractères minimum.', 'At least 8 characters.'],
+  'form.requiredNote': ['* champs obligatoires', '* required fields'],
+  'form.incomplete': [
+    'Complétez les champs signalés en rouge avant d’enregistrer.',
+    'Complete the fields highlighted in red before saving.',
+  ],
+  'form.terms': ['Acceptez les conditions pour continuer.', 'Accept the terms to continue.'],
 
   // ----- Vocabulaire par type d'espace -----
   'vocab.CREATOR.clients': ['Marques', 'Brands'],
@@ -101,20 +147,33 @@ export const DICTIONARY = {
 
   // ----- Connexion -----
   'login.eyebrow': ['Espace créateur', 'Creator space'],
+  'login.businessEyebrow': ['Espace entreprise', 'Business space'],
   'login.title': ['Connexion à votre espace', 'Sign in to your space'],
-  'login.businessQuestion': ['Vous êtes une PME ou une agence ?', 'Are you a company or an agency?'],
+  'login.businessQuestion': [
+    'Vous êtes une PME ou une agence ?',
+    'Are you a company or an agency?',
+  ],
   'login.businessLink': ['Portail entreprise', 'Business portal'],
+  'login.creatorQuestion': [
+    'Vous êtes créateur ou freelance ?',
+    'Are you a creator or freelancer?',
+  ],
+  'login.creatorLink': ['Portail créateur', 'Creator portal'],
   'login.businessNotice': [
-    'Votre espace est un espace <strong>Créateur</strong> : vous y serez redirigé après authentification.',
-    'Your workspace is a <strong>Creator</strong> workspace: you will be redirected there after signing in.',
+    'Portail réservé aux <strong>entreprises</strong> : clients, fournisseurs, devis et factures.',
+    '<strong>Business</strong> portal: customers, suppliers, quotes and invoices.',
   ],
   'login.email': ['Adresse email', 'Email address'],
   'login.password': ['Mot de passe', 'Password'],
-  'login.forgot': ['Mot de passe oublié ?', 'Forgot your password?'],
   'login.submit': ['Se connecter', 'Sign in'],
   'login.or': ['ou', 'or'],
-  'login.google': ['Continuer avec Google', 'Continue with Google'],
   'login.demo': ['Explorer le jeu de démonstration', 'Explore the demo data'],
+  'login.creatorDemo': ['Voir la démo créateur', 'Open creator demo'],
+  'login.businessDemo': ['Voir la démo entreprise', 'Open business demo'],
+  'login.demoPassword': [
+    'Comptes de démonstration — mot de passe : demonstration',
+    'Demo accounts — password: demonstration',
+  ],
   'login.noAccount': ['Pas encore de compte ?', 'No account yet?'],
   'login.signupLink': ['Créer mon espace créateur', 'Create my creator space'],
   'login.promise': [
@@ -125,10 +184,15 @@ export const DICTIONARY = {
     'Une campagne, plusieurs livrables, une facture conforme en moins d’une minute — et des relances qui partent sans que vous ayez à y penser.',
     'One campaign, several deliverables, a compliant invoice in under a minute — and reminders that go out without you thinking about it.',
   ],
-  'login.chain1': [
-    'Proposition envoyée et acceptée en ligne',
-    'Quote sent and accepted online',
+  'login.businessPromise': [
+    'Gérez vos clients, vos fournisseurs et votre facturation au même endroit.',
+    'Manage customers, suppliers, and billing in one place.',
   ],
+  'login.businessPromiseText': [
+    'Un espace PME avec identité légale, devis, factures, paiements et suivi des échéances.',
+    'A business workspace with legal identity, quotes, invoices, payments, and due-date tracking.',
+  ],
+  'login.chain1': ['Proposition envoyée et acceptée en ligne', 'Quote sent and accepted online'],
   'login.chain2': [
     'Contrat et livrables suivis dans la campagne',
     'Contract and deliverables tracked in the campaign',
@@ -138,17 +202,26 @@ export const DICTIONARY = {
     'Relances automatiques jusqu’à l’encaissement',
     'Automatic reminders until the money lands',
   ],
+  'login.businessChain1': [
+    'Client et conditions de paiement enregistrés',
+    'Customer and payment terms saved',
+  ],
+  'login.businessChain2': [
+    'Devis validé puis transformé en facture',
+    'Quote approved then converted to an invoice',
+  ],
+  'login.businessChain3': ['TVA et mentions légales contrôlées', 'VAT and legal notices checked'],
+  'login.businessChain4': [
+    'Paiements et relances suivis jusqu’au solde',
+    'Payments and reminders tracked until settled',
+  ],
   'login.audience': [
     'Créateurs, influenceurs et freelances · Portail dédié',
     'Creators, influencers and freelancers · Dedicated portal',
   ],
-  'login.googleSoon': [
-    'La connexion Google sera activée avec l’API à la mise en production.',
-    'Google sign-in will be enabled with the API in production.',
-  ],
-  'login.forgotSent': [
-    'Si un compte existe pour cette adresse, un lien de réinitialisation vient d’être envoyé.',
-    'If an account exists for this address, a reset link has just been sent.',
+  'login.businessAudience': [
+    'PME, indépendants structurés et agences · Portail entreprise',
+    'Small businesses and agencies · Business portal',
   ],
   'login.spaceNotice': [
     'Votre espace est un espace Créateur',
@@ -158,9 +231,10 @@ export const DICTIONARY = {
   // ----- Authentification -----
   'auth.error.email': ['Adresse email invalide.', 'Invalid email address.'],
   'auth.error.password': [
-    'Le mot de passe doit contenir au moins 6 caractères.',
-    'The password must be at least 6 characters long.',
+    'Le mot de passe doit contenir au moins 8 caractères.',
+    'The password must be at least 8 characters long.',
   ],
+  'auth.error.credentials': ['Email ou mot de passe incorrect.', 'Incorrect email or password.'],
   'auth.error.required': ['Nom et email sont obligatoires.', 'Name and email are required.'],
 
   // ----- Inscription -----
@@ -177,7 +251,12 @@ export const DICTIONARY = {
   ],
   'signup.name': ['Nom et prénom', 'Full name'],
   'signup.handle': ['Pseudonyme public', 'Public handle'],
-  'signup.passwordHint': ['6 caractères minimum', '6 characters minimum'],
+  'signup.passwordHint': ['8 caractères minimum', '8 characters minimum'],
+  'signup.confirmPassword': ['Confirmer le mot de passe', 'Confirm password'],
+  'signup.handleHint': [
+    'Optionnel — votre nom public sur les réseaux.',
+    'Optional — your public name on social media.',
+  ],
   'signup.continue': ['Continuer', 'Continue'],
   'signup.back': ['Retour', 'Back'],
   'signup.submit': ['Créer mon espace', 'Create my space'],
@@ -186,18 +265,27 @@ export const DICTIONARY = {
   'signup.niche': ['Thématique / niche', 'Topic / niche'],
   'signup.country': ['Pays', 'Country'],
   'signup.currency': ['Devise de facturation', 'Invoicing currency'],
+  'signup.currencyHint': [
+    'Elle sera utilisée par défaut sur vos devis et factures.',
+    'It will be used by default on your quotes and invoices.',
+  ],
   'signup.vat': ['Assujetti à la TVA', 'VAT registered'],
-  'signup.vatYes': [
-    'Oui, mes factures portent de la TVA',
-    'Yes, my invoices carry VAT',
+  'signup.vatYes': ['Oui, mes factures portent de la TVA', 'Yes, my invoices carry VAT'],
+  'signup.laterNotice': [
+    'Logo, TVA, mentions légales et coordonnées bancaires seront configurés ensuite, depuis votre espace.',
+    'Logo, VAT, legal notices, and bank details can be configured later from your workspace.',
   ],
   'signup.terms': [
     'J’accepte les conditions générales d’utilisation et la politique de confidentialité.',
     'I accept the terms of use and the privacy policy.',
   ],
   'signup.error.step1': [
-    'Nom, email valide et mot de passe de 6 caractères minimum sont requis.',
-    'Name, a valid email and a 6-character password are required.',
+    'Nom, email valide et mot de passe de 8 caractères minimum sont requis.',
+    'Name, a valid email and an 8-character password are required.',
+  ],
+  'signup.error.passwordMismatch': [
+    'Les deux mots de passe ne correspondent pas.',
+    'The two passwords do not match.',
   ],
   'signup.error.terms': [
     'Vous devez accepter les conditions générales d’utilisation.',
@@ -205,6 +293,11 @@ export const DICTIONARY = {
   ],
   'signup.alreadyMember': ['Déjà inscrit ?', 'Already registered?'],
   'signup.loginLink': ['Se connecter', 'Sign in'],
+  'signup.error.emailUsed': [
+    'Cette adresse email est déjà utilisée.',
+    'This email address is already in use.',
+  ],
+  'signup.saving': ['Enregistrement…', 'Saving…'],
   'profile.INFLUENCER': ['Influenceur', 'Influencer'],
   'profile.CREATOR': ['Créateur de contenu', 'Content creator'],
   'profile.FREELANCE': ['Freelance', 'Freelancer'],
@@ -258,10 +351,7 @@ export const DICTIONARY = {
   'activity.campaignCreated': ['Campagne {name} créée', 'Campaign {name} created'],
   'activity.campaignClosed': ['Campagne {name} clôturée', 'Campaign {name} closed'],
   'activity.contractAttached': ['Contrat joint à {name}', 'Contract attached to {name}'],
-  'activity.quoteCreated': [
-    'Proposition {number} pour {brand}',
-    'Quote {number} for {brand}',
-  ],
+  'activity.quoteCreated': ['Proposition {number} pour {brand}', 'Quote {number} for {brand}'],
   'activity.quoteSent': ['Proposition {number} envoyée', 'Quote {number} sent'],
   'activity.quoteAccepted': [
     'Proposition {number} marquée acceptée',
@@ -308,10 +398,7 @@ export const DICTIONARY = {
     '{count} advertiser(s) · {late} late on payment',
   ],
   'brands.new': ['Nouvelle marque', 'New brand'],
-  'brands.searchPlaceholder': [
-    'Rechercher une marque, un contact…',
-    'Search a brand, a contact…',
-  ],
+  'brands.searchPlaceholder': ['Rechercher une marque, un contact…', 'Search a brand, a contact…'],
   'brands.searchLabel': ['Rechercher une marque', 'Search a brand'],
   'brands.badPayers': ['Mauvais payeurs', 'Late payers'],
   'brands.col.brand': ['Marque', 'Brand'],
@@ -340,6 +427,11 @@ export const DICTIONARY = {
   'brands.form.phone': ['Téléphone', 'Phone'],
   'brands.form.address': ['Adresse', 'Address'],
   'brands.form.terms': ['Paiement (jours)', 'Payment terms (days)'],
+  'brands.form.country': ['Pays (code ISO)', 'Country (ISO code)'],
+  'brands.form.countryHint': [
+    'Exigé par la facture électronique Factur-X.',
+    'Required by Factur-X electronic invoicing.',
+  ],
   'brands.form.termsHint': [
     'Sert à calculer l’échéance par défaut des factures de cette marque.',
     'Used to compute the default due date of this brand’s invoices.',
@@ -354,11 +446,53 @@ export const DICTIONARY = {
   'brands.flash.updated': ['Marque mise à jour.', 'Brand updated.'],
   'brands.flash.deleted': ['{name} supprimée.', '{name} deleted.'],
   'brands.flash.exported': ['Export CSV généré.', 'CSV export generated.'],
-  'brand.error.name': [
-    'Le nom de la marque est obligatoire.',
-    'The brand name is required.',
+  'brands.kpi.portfolio': ['Portefeuille', 'Portfolio'],
+  'brands.kpi.portfolioDetail': ['Marques suivies', 'Brands tracked'],
+  'brands.kpi.invoiced': ['Total facturé', 'Total invoiced'],
+  'brands.kpi.invoicedDetail': ['Toutes marques confondues', 'Across every brand'],
+  'brands.kpi.outstanding': ['Reste dû', 'Outstanding'],
+  'brands.kpi.outstandingDetail': ['{count} marque(s) concernée(s)', '{count} brand(s) concerned'],
+  'brands.kpi.late': ['En retard', 'Late'],
+  'brands.kpi.lateDetail': ['Au moins une facture échue', 'At least one overdue invoice'],
+  'brands.filter.label': ['Filtrer les marques', 'Filter brands'],
+  'brands.filter.all': ['Toutes', 'All'],
+  'brands.filter.clean': ['À jour', 'Up to date'],
+  'brands.filter.paused': ['Suspendues', 'Paused'],
+  'brands.sort.label': ['Trier par', 'Sort by'],
+  'brands.sort.name': ['Nom', 'Name'],
+  'brands.sort.invoiced': ['Total facturé', 'Total invoiced'],
+  'brands.sort.outstanding': ['Reste dû', 'Outstanding'],
+  'brands.sort.reliability': ['Fiabilité', 'Reliability'],
+  'brands.sort.activity': ['Dernière activité', 'Last activity'],
+  'brands.view.label': ['Affichage', 'Display'],
+  'brands.view.table': ['Vue tableau', 'Table view'],
+  'brands.view.grid': ['Vue cartes', 'Card view'],
+  'brands.col.reliability': ['Fiabilité', 'Reliability'],
+  'brands.terms': ['{days} j de délai', '{days}d terms'],
+  'brands.results': ['{count} sur {total} affichée(s)', '{count} of {total} shown'],
+  'brands.reset': ['Réinitialiser les filtres', 'Clear filters'],
+  'brands.total': ['Total affiché', 'Displayed total'],
+  'brands.searchChip': ['« {term} »', '“{term}”'],
+  'brands.searchHint': ['Appuyez sur / pour rechercher', 'Press / to search'],
+  'brands.clearSearch': ['Effacer la recherche', 'Clear search'],
+  'brands.removeFilter': ['Retirer ce filtre', 'Remove this filter'],
+  'brands.noResult.title': ['Aucune marque ne correspond', 'No brand matches'],
+  'brands.empty.title': ['Aucune marque pour l’instant', 'No brand yet'],
+  'brands.empty.hint': [
+    'Ajoutez votre première marque pour facturer, suivre les encaissements et relancer automatiquement.',
+    'Add your first brand to invoice, track payments and send automatic reminders.',
   ],
+  'brands.sheet.contact': ['Coordonnées', 'Contact details'],
+  'brands.sheet.reliability': ['Fiabilité de paiement', 'Payment reliability'],
+  'brands.sheet.terms': ['Délai négocié', 'Agreed terms'],
+  'brands.form.section.identity': ['Identité', 'Identity'],
+  'brands.form.section.billing': ['Facturation', 'Billing'],
+  'brand.error.name': ['Le nom de la marque est obligatoire.', 'The brand name is required.'],
   'brand.error.email': ['Adresse email invalide.', 'Invalid email address.'],
+  'brand.error.linked': [
+    'Suppression impossible : des campagnes ou des collaborations sont rattachées à cette marque.',
+    'Cannot delete: campaigns or collaborations are attached to this brand.',
+  ],
   'brand.error.hasInvoices': [
     'Cette marque porte des factures : elle ne peut pas être supprimée.',
     'This brand has invoices: it cannot be deleted.',
@@ -378,6 +512,11 @@ export const DICTIONARY = {
   'campaigns.generateInvoice': ['Générer la facture', 'Generate the invoice'],
   'campaigns.attachContract': ['Joindre un contrat', 'Attach a contract'],
   'campaigns.close': ['Clôturer', 'Close'],
+  'campaigns.searchPlaceholder': [
+    'Rechercher une campagne, une marque…',
+    'Search a campaign, a brand…',
+  ],
+  'campaigns.searchLabel': ['Rechercher une campagne', 'Search a campaign'],
   'campaigns.empty': [
     'Aucune campagne pour ce filtre. Créez-en une pour regrouper vos livrables par marque.',
     'No campaign for this filter. Create one to group your deliverables by brand.',
@@ -430,6 +569,14 @@ export const DICTIONARY = {
     'Clôture impossible : {count} facture(s) liée(s) ne sont ni payées ni annulées.',
     'Cannot close: {count} linked invoice(s) are neither paid nor cancelled.',
   ],
+  'campaign.error.billingOffline': [
+    'La facturation n’est pas encore reliée au serveur : proposition et facture restent indisponibles dans un espace connecté.',
+    'Billing is not connected to the server yet: quotes and invoices are unavailable in a connected workspace.',
+  ],
+  'campaign.error.contractOffline': [
+    'Le dépôt de contrat n’est pas encore ouvert côté serveur.',
+    'Contract upload is not available on the server yet.',
+  ],
   'campaign.copySuffix': ['{name} (copie)', '{name} (copy)'],
   'campaign.invoiceTerms': [
     'Campagne « {name} » du {start} au {end}.',
@@ -456,10 +603,9 @@ export const DICTIONARY = {
   'quotes.markAccepted': ['Acceptée', 'Accepted'],
   'quotes.markRefused': ['Refusée', 'Declined'],
   'quotes.convert': ['Transformer en facture', 'Convert to invoice'],
-  'quotes.empty': [
-    'Aucune proposition pour ce filtre.',
-    'No quote for this filter.',
-  ],
+  'quotes.searchPlaceholder': ['Rechercher un numéro, une marque…', 'Search a number, a brand…'],
+  'quotes.searchLabel': ['Rechercher une proposition', 'Search a quote'],
+  'quotes.empty': ['Aucune proposition pour ce filtre.', 'No quote for this filter.'],
   'quotes.form.subtitle': [
     'Envoyée par email avec une page publique d’acceptation en un clic.',
     'Emailed with a public one-click acceptance page.',
@@ -517,10 +663,7 @@ export const DICTIONARY = {
   ],
   'invoices.new': ['Nouvelle facture', 'New invoice'],
   'invoices.sum.invoiced': ['Facturé', 'Invoiced'],
-  'invoices.searchPlaceholder': [
-    'Numéro, marque ou montant…',
-    'Number, brand or amount…',
-  ],
+  'invoices.searchPlaceholder': ['Numéro, marque ou montant…', 'Number, brand or amount…'],
   'invoices.searchLabel': ['Rechercher une facture', 'Search an invoice'],
   'invoices.col.number': ['Numéro', 'Number'],
   'invoices.col.brand': ['Marque', 'Brand'],
@@ -545,15 +688,9 @@ export const DICTIONARY = {
   'invoices.form.terms': ['Conditions et mentions', 'Terms and legal notices'],
   'invoices.form.saveDraft': ['Enregistrer en brouillon', 'Save as draft'],
   'invoices.form.submit': ['Émettre et envoyer', 'Issue and send'],
-  'invoices.defaultTerms': [
-    'Paiement par virement bancaire.',
-    'Payment by bank transfer.',
-  ],
+  'invoices.defaultTerms': ['Paiement par virement bancaire.', 'Payment by bank transfer.'],
   'invoices.detail.title': ['Brouillon de facture', 'Invoice draft'],
-  'invoices.detail.subtitle': [
-    '{brand} · échéance le {due}',
-    '{brand} · due on {due}',
-  ],
+  'invoices.detail.subtitle': ['{brand} · échéance le {due}', '{brand} · due on {due}'],
   'invoices.detail.deposit': ['Acompte demandé : {amount}', 'Deposit requested: {amount}'],
   'invoices.detail.deliverable': ['Livrable', 'Deliverable'],
   'invoices.detail.qty': ['Qté', 'Qty'],
@@ -575,15 +712,9 @@ export const DICTIONARY = {
     'A sent invoice cannot be edited: any correction goes through a credit note. The credit note mirrors the same lines as negatives ({amount}) and invoice {number} will be cancelled.',
   ],
   'invoices.credit.confirm': ['Générer l’avoir', 'Issue the credit note'],
-  'invoices.credit.terms': [
-    'Avoir sur la facture {number}.',
-    'Credit note for invoice {number}.',
-  ],
+  'invoices.credit.terms': ['Avoir sur la facture {number}.', 'Credit note for invoice {number}.'],
   'invoices.payment.title': ['Enregistrer un paiement', 'Record a payment'],
-  'invoices.payment.subtitle': [
-    '{number} · reste dû {amount}',
-    '{number} · outstanding {amount}',
-  ],
+  'invoices.payment.subtitle': ['{number} · reste dû {amount}', '{number} · outstanding {amount}'],
   'invoices.payment.amount': ['Montant', 'Amount'],
   'invoices.payment.date': ['Date', 'Date'],
   'invoices.payment.method': ['Méthode', 'Method'],
@@ -647,10 +778,7 @@ export const DICTIONARY = {
   'totals.vatOn': ['TVA {rate} % sur {base}', 'VAT {rate}% on {base}'],
 
   // ----- Paiements -----
-  'payments.subtitle': [
-    '{count} versement(s) enregistré(s)',
-    '{count} payment(s) recorded',
-  ],
+  'payments.subtitle': ['{count} versement(s) enregistré(s)', '{count} payment(s) recorded'],
   'payments.new': ['Enregistrer un paiement', 'Record a payment'],
   'payments.sum.total': ['Total encaissé', 'Total collected'],
   'payments.sum.month': ['Encaissé ce mois', 'Collected this month'],
@@ -693,6 +821,7 @@ export const DICTIONARY = {
     '{count} facture(s) à relancer · plafond de {cap} envois par jour',
     '{count} invoice(s) to chase · cap of {cap} sends per day',
   ],
+  'reminders.mode.label': ['Mode de relance', 'Reminder mode'],
   'reminders.mode.manual': ['Validation manuelle', 'Manual approval'],
   'reminders.mode.auto': ['Automatique', 'Automatic'],
   'reminders.kpi.today': ['À envoyer aujourd’hui', 'To send today'],
@@ -704,10 +833,7 @@ export const DICTIONARY = {
     'Chaque étape est activable indépendamment.',
     'Each step can be switched on independently.',
   ],
-  'reminders.channelTemplate': [
-    'Email · modèle « {template} »',
-    'Email · “{template}” template',
-  ],
+  'reminders.channelTemplate': ['Email · modèle « {template} »', 'Email · “{template}” template'],
   'reminders.variables': [
     'Variables disponibles : nom de la marque, numéro de facture, montant, jours de retard, lien de paiement. WhatsApp et SMS sont prévus en version 2.',
     'Available variables: brand name, invoice number, amount, days overdue, payment link. WhatsApp and SMS are planned for version 2.',
@@ -728,10 +854,7 @@ export const DICTIONARY = {
   'reminders.col.invoice': ['Facture', 'Invoice'],
   'reminders.col.brand': ['Marque', 'Brand'],
   'reminders.col.step': ['Étape', 'Step'],
-  'reminders.historyEmpty': [
-    'Aucune relance envoyée pour l’instant.',
-    'No reminder sent yet.',
-  ],
+  'reminders.historyEmpty': ['Aucune relance envoyée pour l’instant.', 'No reminder sent yet.'],
   'reminders.modal.title': ['Message de relance', 'Reminder message'],
   'reminders.modal.hint': [
     'Message pré-rempli depuis le modèle de l’étape et les données de la facture. Vous pouvez l’ajuster avant envoi.',
@@ -751,10 +874,7 @@ export const DICTIONARY = {
     'Reminder sent to {brand} for {number}.',
   ],
   'reminders.flash.sentShort': ['Relance envoyée.', 'Reminder sent.'],
-  'reminders.flash.postponed': [
-    'Relance reportée de 3 jours.',
-    'Reminder postponed by 3 days.',
-  ],
+  'reminders.flash.postponed': ['Relance reportée de 3 jours.', 'Reminder postponed by 3 days.'],
   'reminder.error.cap': [
     'Plafond de {cap} relances par jour atteint. Les envois reprennent demain.',
     'Cap of {cap} reminders per day reached. Sending resumes tomorrow.',
@@ -793,10 +913,7 @@ export const DICTIONARY = {
     'Invoiced revenue — last 12 months',
   ],
   'reports.topBrands': ['Top marques', 'Top brands'],
-  'reports.byDeliverable': [
-    'Revenus par type de livrable',
-    'Revenue by deliverable type',
-  ],
+  'reports.byDeliverable': ['Revenus par type de livrable', 'Revenue by deliverable type'],
   'reports.noInvoice': ['Aucune facture émise.', 'No invoice issued.'],
   'reports.noDeliverable': ['Aucun livrable facturé.', 'No deliverable invoiced.'],
   'reports.aging': ['Impayés par ancienneté', 'Aged receivables'],
@@ -892,6 +1009,18 @@ export const DICTIONARY = {
     'Use the browser print dialog to save the invoice as a PDF.',
   ],
 
+  // ----- Factur-X -----
+  'facturx.exportXml': ['Factur-X XML', 'Factur-X XML'],
+  'facturx.exportPdf': ['Factur-X PDF/A-3', 'Factur-X PDF/A-3'],
+  'facturx.hint': [
+    'Facture électronique Factur-X, profil {profile} : le XML EN 16931 est produit ici, le PDF/A-3 qui l’embarque est assemblé côté serveur.',
+    'Factur-X electronic invoice, {profile} profile: the EN 16931 XML is produced here, the PDF/A-3 embedding it is assembled server-side.',
+  ],
+  'facturx.flash.exported': [
+    'XML Factur-X exporté (profil {profile}).',
+    'Factur-X XML exported ({profile} profile).',
+  ],
+
   // ----- Modification et suppression -----
   'invoices.edit': ['Modifier', 'Edit'],
   'invoices.editTitle': ['Modifier la facture {number}', 'Edit invoice {number}'],
@@ -933,14 +1062,8 @@ export const DICTIONARY = {
     'Mention the outstanding balance in the message',
   ],
   'email.attachment': ['Pièce jointe : {number}.pdf', 'Attachment: {number}.pdf'],
-  'email.subjectInvoice': [
-    'Facture {number} — {business}',
-    'Invoice {number} — {business}',
-  ],
-  'email.subjectQuote': [
-    'Proposition {number} — {business}',
-    'Quote {number} — {business}',
-  ],
+  'email.subjectInvoice': ['Facture {number} — {business}', 'Invoice {number} — {business}'],
+  'email.subjectQuote': ['Proposition {number} — {business}', 'Quote {number} — {business}'],
   'email.bodyInvoice': [
     'Bonjour {contact},\n\nVous trouverez ci-joint la facture {number} d’un montant de {total}, à échéance du {due}.\n\nBien à vous,\n{business}',
     'Hello {contact},\n\nPlease find attached invoice {number} for {total}, due on {due}.\n\nBest regards,\n{business}',
@@ -954,30 +1077,56 @@ export const DICTIONARY = {
     'Outstanding balance to date: {outstanding} (already paid: {paid}).',
   ],
   'email.flash.sent': ['Document envoyé à {to}.', 'Document sent to {to}.'],
-  'email.error.recipient': [
-    'Renseignez une adresse email valide.',
-    'Enter a valid email address.',
-  ],
+  'email.error.recipient': ['Renseignez une adresse email valide.', 'Enter a valid email address.'],
   'email.history': ['Envois par email', 'Email history'],
   'email.noHistory': ['Aucun envoi enregistré.', 'No send recorded.'],
 
   // ----- Paramètres -----
   'nav.settings': ['Paramètres', 'Settings'],
   'settings.subtitle': [
-    'Tout ce qui ne se règle qu’une fois : identité, documents, TVA, numérotation.',
-    'Everything you set once: identity, documents, VAT, numbering.',
+    'Tout ce qui ne se règle qu’une fois : identité, logo, numérotation, mentions.',
+    'Everything you set once: identity, logo, numbering, notices.',
+  ],
+  'settings.unsaved': ['Modifications non enregistrées', 'Unsaved changes'],
+  'settings.revert': ['Annuler les modifications', 'Discard changes'],
+  'settings.preview': ['Aperçu du résultat', 'Result preview'],
+  'settings.previewHint': [
+    'Facture d’exemple. Elle reprend vos réglages à la frappe, avant enregistrement.',
+    'Sample invoice. It follows your settings as you type, before you save.',
   ],
   'settings.identity': ['Identité et coordonnées', 'Identity and details'],
+  'settings.identityHint': [
+    'Bloc émetteur, en haut à gauche de chaque document.',
+    'Issuer block, at the top left of every document.',
+  ],
+  'settings.brandingHint': [
+    'Logo, couleur des titres et des totaux, devise des montants.',
+    'Logo, colour of titles and totals, currency of amounts.',
+  ],
+  'settings.documentsHint': [
+    'Séries de numérotation et conditions proposées sur les nouveaux documents.',
+    'Numbering series and terms suggested on new documents.',
+  ],
+  'settings.mentionsHint': [
+    'Textes repris en bas de chaque document, sous les totaux.',
+    'Text repeated at the bottom of every document, below the totals.',
+  ],
   'settings.businessName': ['Nom affiché sur les documents', 'Name shown on documents'],
   'settings.address': ['Adresse', 'Address'],
   'settings.taxId': ['Identifiant fiscal', 'Tax ID'],
+  'settings.countryCode': ['Pays (code ISO)', 'Country (ISO code)'],
   'settings.bankDetails': ['Coordonnées bancaires (IBAN)', 'Bank details (IBAN)'],
   'settings.branding': ['Logo et couleur', 'Logo and colour'],
   'settings.logo': ['Logo de la facture', 'Invoice logo'],
   'settings.logoHint': [
-    'PNG ou JPG, 1 Mo maximum. Affiché en haut de vos documents.',
-    'PNG or JPG, 1 MB maximum. Shown at the top of your documents.',
+    'PNG, JPG, WebP ou SVG, 1 Mo maximum.',
+    'PNG, JPG, WebP or SVG, 1 MB maximum.',
   ],
+  'settings.logoDrop': [
+    'Déposez une image ici, ou cliquez pour parcourir',
+    'Drop an image here, or click to browse',
+  ],
+  'settings.logoNone': ['Aucun logo', 'No logo'],
   'settings.logoRemove': ['Retirer le logo', 'Remove logo'],
   'settings.accentColor': ['Couleur d’accentuation', 'Accent colour'],
   'settings.documents': ['Documents et numérotation', 'Documents and numbering'],
@@ -995,22 +1144,29 @@ export const DICTIONARY = {
     'VAT is no longer configured here: it defaults to 20% on every document, where you can change it, remove it or add other taxes.',
   ],
   'settings.quotePrefix': ['Préfixe des propositions', 'Quote prefix'],
-  'settings.numberingHint': [
-    'Prochain numéro : {next}',
-    'Next number: {next}',
-  ],
-  'settings.defaultVat': ['TVA par défaut (%)', 'Default VAT (%)'],
+  'settings.numberingHint': ['Prochain numéro : {next}', 'Next number: {next}'],
   'settings.defaultTermsDays': ['Délai de paiement (jours)', 'Payment terms (days)'],
   'settings.currency': ['Devise', 'Currency'],
   'settings.defaultTerms': ['Conditions par défaut', 'Default terms'],
   'settings.legalMentions': ['Mentions légales', 'Legal notices'],
   'settings.invoiceFooter': ['Pied de facture', 'Invoice footer'],
   'settings.flash.saved': ['Paramètres enregistrés.', 'Settings saved.'],
-  'settings.flash.logo': ['Logo mis à jour.', 'Logo updated.'],
-  'settings.error.logoSize': [
-    'Le fichier dépasse 1 Mo.',
-    'The file is larger than 1 MB.',
+  'settings.flash.logo': [
+    'Logo chargé. Enregistrez pour l’appliquer à vos documents.',
+    'Logo loaded. Save to apply it to your documents.',
   ],
+  'settings.error.logoSize': ['Le fichier dépasse 1 Mo.', 'The file is larger than 1 MB.'],
+  'settings.error.logoType': [
+    'Formats acceptés : PNG, JPG, WebP ou SVG.',
+    'Accepted formats: PNG, JPG, WebP or SVG.',
+  ],
+
+  // Facture d'exemple de l'aperçu des paramètres
+  'settings.sample.brand': ['Marque Exemple', 'Sample Brand'],
+  'settings.sample.email': ['contact@exemple.com', 'contact@example.com'],
+  'settings.sample.campaign': ['Campagne printemps', 'Spring campaign'],
+  'settings.sample.line1': ['Reel Instagram', 'Instagram reel'],
+  'settings.sample.line2': ['Story avec lien', 'Story with link'],
   'settings.error.prefix': [
     'Les préfixes doivent contenir de 2 à 6 lettres.',
     'Prefixes must contain 2 to 6 letters.',
@@ -1073,10 +1229,7 @@ export const DICTIONARY = {
     'Propositions et factures PDF illimitées',
     'Unlimited quotes and PDF invoices',
   ],
-  'subscription.feature.collaborations': [
-    'Pipeline de collaborations',
-    'Collaboration pipeline',
-  ],
+  'subscription.feature.collaborations': ['Pipeline de collaborations', 'Collaboration pipeline'],
   'subscription.feature.branding': [
     'Logo et couleur sur vos documents',
     'Logo and colour on your documents',
@@ -1119,10 +1272,7 @@ export const DICTIONARY = {
   'collaborations.won': ['Signées', 'Won'],
   'collaborations.nextSteps': ['Prochaines actions', 'Next steps'],
   'collaborations.noNextStep': ['Aucune action planifiée.', 'No action planned.'],
-  'collaborations.empty': [
-    'Aucune collaboration à ce stade.',
-    'No collaboration at this stage.',
-  ],
+  'collaborations.empty': ['Aucune collaboration à ce stade.', 'No collaboration at this stage.'],
   'collaborations.form.title': ['Intitulé', 'Title'],
   'collaborations.form.brand': ['Marque', 'Brand'],
   'collaborations.form.type': ['Type de collaboration', 'Collaboration type'],
@@ -1172,10 +1322,7 @@ export const DICTIONARY = {
   'reports.year': ['Année', 'Year'],
   'reports.byYear': ['Revenus par année', 'Revenue by year'],
   'reports.byMonth': ['Revenus par mois — {year}', 'Revenue by month — {year}'],
-  'reports.comparison': [
-    '{year} vs {previous} : {trend} %',
-    '{year} vs {previous}: {trend}%',
-  ],
+  'reports.comparison': ['{year} vs {previous} : {trend} %', '{year} vs {previous}: {trend}%'],
   'reports.invoiced': ['Facturé', 'Invoiced'],
   'reports.collected': ['Encaissé', 'Collected'],
   'reports.bestMonth': ['Meilleur mois', 'Best month'],
@@ -1197,20 +1344,331 @@ export const DICTIONARY = {
     'Reliability shows up after your first payments.',
   ],
 
+  // ----- Modèles de facture -----
+  'nav.templates': ['Modèles', 'Templates'],
+  'templates.title': ['Modèles de facture', 'Invoice templates'],
+  'templates.subtitle': [
+    'Composez vos documents bloc par bloc, sans toucher aux montants.',
+    'Compose your documents block by block, without touching the amounts.',
+  ],
+  'templates.new': ['+ Nouveau modèle', '+ New template'],
+  'templates.newHint': [
+    'Partez d’un modèle fourni, vous le modifierez ensuite librement.',
+    'Start from a provided template, then change anything you like.',
+  ],
+  'templates.name': ['Nom du modèle', 'Template name'],
+  'templates.defaultName': ['Mon modèle', 'My template'],
+  'templates.startFrom': ['Partir de', 'Start from'],
+  'templates.create': ['Créer le modèle', 'Create the template'],
+  'templates.edit': ['Modifier le modèle', 'Edit the template'],
+  'templates.default': ['Par défaut', 'Default'],
+  'templates.setDefault': ['Définir comme défaut', 'Set as default'],
+  'templates.preset': ['Modèle fourni', 'Provided template'],
+  'templates.updatedAt': ['Modifié le', 'Updated on'],
+  'templates.emptyTitle': ['Aucun modèle pour l’instant', 'No template yet'],
+  'templates.emptyHint': [
+    'Créez votre premier modèle pour personnaliser vos factures.',
+    'Create your first template to customise your invoices.',
+  ],
+  'templates.deleteTitle': ['Supprimer le modèle', 'Delete the template'],
+  'templates.deleteWarning': [
+    'Le modèle sera définitivement supprimé. Les factures déjà émises ne changent pas.',
+    'The template will be permanently deleted. Invoices already issued stay untouched.',
+  ],
+  'templates.offline': [
+    'API des modèles injoignable : les modèles fournis sont affichés et vos changements restent en mémoire.',
+    'Templates API unreachable: provided templates are shown and your changes stay in memory.',
+  ],
+  'templates.copyName': ['{name} (copie)', '{name} (copy)'],
+  'templates.notFound': ['Ce modèle est introuvable.', 'This template cannot be found.'],
+  'templates.backToList': ['Revenir aux modèles', 'Back to templates'],
+
+  'templates.palette': ['Blocs disponibles', 'Available blocks'],
+  'templates.paletteHint': [
+    'Glissez un bloc dans la composition, ou cliquez pour l’ajouter à la fin.',
+    'Drag a block into the layout, or click to append it.',
+  ],
+  'templates.composition': ['Composition du document', 'Document layout'],
+  'templates.blocks': ['Blocs', 'Blocks'],
+  'templates.properties': ['Propriétés', 'Properties'],
+  'templates.addBlock': ['Ajouter le bloc {block}', 'Add the {block} block'],
+  'templates.removeBlock': ['Retirer le bloc', 'Remove the block'],
+  'templates.moveUp': ['Monter', 'Move up'],
+  'templates.moveDown': ['Descendre', 'Move down'],
+  'templates.hide': ['Masquer le bloc', 'Hide the block'],
+  'templates.show': ['Afficher le bloc', 'Show the block'],
+  'templates.noBlock': ['Aucun bloc : ajoutez-en un.', 'No block: add one.'],
+  'templates.block.header': ['En-tête', 'Header'],
+  'templates.block.logo': ['Logo', 'Logo'],
+  'templates.block.customer': ['Client', 'Customer'],
+  'templates.block.info': ['Informations', 'Information'],
+  'templates.block.items': ['Produits', 'Items'],
+  'templates.block.totals': ['Totaux', 'Totals'],
+  'templates.block.payment': ['Paiement', 'Payment'],
+  'templates.block.notes': ['Notes', 'Notes'],
+  'templates.block.footer': ['Pied de page', 'Footer'],
+
+  'templates.colors': ['Couleurs', 'Colours'],
+  'templates.primaryColor': ['Couleur principale', 'Primary colour'],
+  'templates.secondaryColor': ['Couleur secondaire', 'Secondary colour'],
+  'templates.textColor': ['Couleur du texte', 'Text colour'],
+  'templates.borderColor': ['Couleur des filets', 'Border colour'],
+  'templates.tableHeaderColor': ['Fond du tableau', 'Table header'],
+  'templates.typography': ['Police', 'Typography'],
+  'templates.fontFamily': ['Famille', 'Family'],
+  'templates.fontSize': ['Taille (px)', 'Size (px)'],
+  'templates.fontWeight': ['Graisse', 'Weight'],
+  'templates.layout': ['Mise en page', 'Layout'],
+  'templates.margin': ['Marge (mm)', 'Margin (mm)'],
+  'templates.padding': ['Espacement (px)', 'Padding (px)'],
+  'templates.alignment': ['Alignement', 'Alignment'],
+  'templates.border': ['Bordure', 'Border'],
+  'templates.borderRadius': ['Arrondi (px)', 'Radius (px)'],
+  'templates.align.left': ['Gauche', 'Left'],
+  'templates.align.center': ['Centre', 'Center'],
+  'templates.align.right': ['Droite', 'Right'],
+  'templates.blockSettings': ['Bloc « {block} »', '“{block}” block'],
+  'templates.blockTitle': ['Titre affiché', 'Displayed title'],
+  'templates.blockText': ['Texte', 'Text'],
+  'templates.logoWidth': ['Largeur du logo (px)', 'Logo width (px)'],
+  'templates.logoUpload': ['Téléverser un logo', 'Upload a logo'],
+  'templates.logoHint': [
+    'Le fichier est envoyé au backend, qui renvoie son URL.',
+    'The file is sent to the backend, which returns its URL.',
+  ],
+  'templates.columns': ['Colonnes du tableau', 'Table columns'],
+  'templates.column.description': ['Description', 'Description'],
+  'templates.column.quantity': ['Quantité', 'Quantity'],
+  'templates.column.unitPrice': ['Prix unitaire', 'Unit price'],
+  'templates.column.discount': ['Remise', 'Discount'],
+  'templates.column.vat': ['TVA', 'VAT'],
+  'templates.column.total': ['Total', 'Total'],
+  'templates.showVat': ['Afficher la TVA ventilée', 'Show the VAT breakdown'],
+  'templates.showDeposit': ['Afficher l’acompte', 'Show the deposit'],
+  'templates.showOutstanding': ['Afficher le reste à payer', 'Show the outstanding amount'],
+
+  'templates.preview': ['Prévisualiser', 'Preview'],
+  'templates.downloadPdf': ['Télécharger PDF', 'Download PDF'],
+  'templates.autoSave': ['Enregistrement automatique', 'Auto-save'],
+  'templates.saving': ['Enregistrement…', 'Saving…'],
+  'templates.saved': ['Enregistré', 'Saved'],
+  'templates.unsaved': ['Modifications non enregistrées', 'Unsaved changes'],
+  'templates.upToDate': ['À jour', 'Up to date'],
+  'templates.pdfNoInvoice': [
+    'Émettez une facture pour tester le PDF de ce modèle.',
+    'Issue an invoice to test this template’s PDF.',
+  ],
+  'templates.pdfUnavailable': [
+    'La génération PDF est assurée par le backend, actuellement injoignable.',
+    'PDF generation is handled by the backend, currently unreachable.',
+  ],
+  'templates.flash.saved': ['Modèle enregistré.', 'Template saved.'],
+  'templates.flash.savedOffline': [
+    'Modifications gardées en mémoire : l’API n’a pas répondu.',
+    'Changes kept in memory: the API did not respond.',
+  ],
+  'templates.flash.created': ['Modèle créé.', 'Template created.'],
+  'templates.flash.createdOffline': [
+    'Modèle créé localement : l’API n’a pas répondu.',
+    'Template created locally: the API did not respond.',
+  ],
+  'templates.flash.duplicated': ['Modèle dupliqué.', 'Template duplicated.'],
+  'templates.flash.deleted': ['Modèle supprimé.', 'Template deleted.'],
+  'templates.flash.default': ['Modèle défini par défaut.', 'Template set as default.'],
+  'templates.flash.logo': ['Logo téléversé.', 'Logo uploaded.'],
+  'templates.flash.logoFailed': [
+    'Téléversement impossible : réessayez plus tard.',
+    'Upload failed: please try again later.',
+  ],
+  'templates.selectForInvoice': ['Modèle', 'Template'],
+
+  // ----- Erreurs HTTP -----
+  'http.error.400': [
+    'Saisie refusée par le serveur : vérifiez les champs.',
+    'The server rejected the input: please check the fields.',
+  ],
+  'http.error.409': [
+    'Action impossible dans l’état actuel de la donnée.',
+    'This action conflicts with the current state of the data.',
+  ],
+  'http.error.401': [
+    'Session expirée : reconnectez-vous.',
+    'Session expired: please sign in again.',
+  ],
+  'http.error.403': [
+    'Vous n’avez pas les droits sur cette ressource.',
+    'You do not have permission on this resource.',
+  ],
+  'http.error.404': ['Ressource introuvable.', 'Resource not found.'],
+  'http.error.offline': ['Service indisponible.', 'Service unavailable.'],
+  'http.error.unknown': [
+    'Une erreur est survenue. Réessayez.',
+    'Something went wrong. Please try again.',
+  ],
+
   // ----- Quotas -----
   'quota.limit': [
     'Limite atteinte : votre offre {plan} autorise {limit} {item}.',
     'Limit reached: your {plan} plan allows {limit} {item}.',
   ],
-  'quota.upgrade': [
-    'L’offre {plan} en autorise {limit}.',
-    'The {plan} plan allows {limit}.',
-  ],
+  'quota.upgrade': ['L’offre {plan} en autorise {limit}.', 'The {plan} plan allows {limit}.'],
   'quota.item.brands': ['marques', 'brands'],
   'quota.item.invoicesPerMonth': ['factures par mois', 'invoices per month'],
-  'quota.item.reminderSteps': [
-    'étapes de relance automatiques',
-    'automatic reminder steps',
+  'quota.item.reminderSteps': ['étapes de relance automatiques', 'automatic reminder steps'],
+
+  // ----- Espace PME : entreprise active, clients, fournisseurs -----
+  'pme.company.label': ['Entreprise', 'Company'],
+  'pme.company.switch': ['Changer d’entreprise', 'Switch company'],
+  'pme.company.siren': ['SIREN', 'SIREN'],
+  'pme.company.vatNumber': ['N° TVA', 'VAT number'],
+
+  'pme.customers.title': ['Clients', 'Customers'],
+  'pme.customers.subtitle': [
+    '{count} client(s) pour {company}',
+    '{count} customer(s) for {company}',
+  ],
+  'pme.customers.new': ['Nouveau client', 'New customer'],
+  'pme.customers.empty': [
+    'Aucun client pour cette entreprise. Créez le premier pour pouvoir facturer.',
+    'No customer for this company yet. Create the first one to start invoicing.',
+  ],
+  'pme.customers.searchPlaceholder': ['Rechercher un client…', 'Search a customer…'],
+
+  'pme.suppliers.title': ['Fournisseurs', 'Suppliers'],
+  'pme.suppliers.subtitle': [
+    '{count} fournisseur(s) pour {company}',
+    '{count} supplier(s) for {company}',
+  ],
+  'pme.suppliers.new': ['Nouveau fournisseur', 'New supplier'],
+  'pme.suppliers.empty': [
+    'Aucun fournisseur pour cette entreprise.',
+    'No supplier for this company yet.',
+  ],
+  'pme.suppliers.searchPlaceholder': ['Rechercher un fournisseur…', 'Search a supplier…'],
+  'pme.suppliers.iban': ['IBAN', 'IBAN'],
+  'pme.suppliers.nature': ['Nature des achats', 'Purchase nature'],
+
+  // Colonnes communes aux deux fichiers de tiers
+  'pme.party.name': ['Nom', 'Name'],
+  'pme.party.kind': ['Type', 'Type'],
+  'pme.party.contact': ['Contact', 'Contact'],
+  'pme.party.city': ['Ville', 'City'],
+  'pme.party.siren': ['SIREN', 'SIREN'],
+  'pme.party.vatNumber': ['N° TVA', 'VAT number'],
+  'pme.party.terms': ['Délai', 'Terms'],
+  'pme.party.termsDays': ['{days} j', '{days} d'],
+  'pme.party.termsImmediate': ['Comptant', 'Immediate'],
+  'pme.party.actions': ['Actions', 'Actions'],
+  'pme.party.company': ['Entreprise', 'Company'],
+  'pme.party.individual': ['Particulier', 'Individual'],
+  'pme.party.noSiren': ['—', '—'],
+  'pme.party.deliveryDiffers': ['Adresse de livraison distincte', 'Separate delivery address'],
+
+  // Régimes et natures
+  'pme.vatRegime.REEL_NORMAL': ['Réel normal', 'Standard regime'],
+  'pme.vatRegime.REEL_SIMPLIFIE': ['Réel simplifié', 'Simplified regime'],
+  'pme.vatRegime.FRANCHISE_BASE': ['Franchise en base', 'VAT-exempt (base franchise)'],
+  'pme.nature.GOODS': ['Vente de biens', 'Goods'],
+  'pme.nature.SERVICES': ['Prestation de services', 'Services'],
+  'pme.nature.MIXED': ['Biens et services', 'Goods and services'],
+
+  // Mentions réglementaires signalées à l'utilisateur
+  'pme.notice.vatOnDebits': [
+    'Option pour le paiement de la TVA sur les débits : la mention figurera sur vos factures.',
+    'VAT on debits option: the mention will appear on your invoices.',
+  ],
+  'pme.notice.franchise': [
+    'TVA non applicable, art. 293 B du CGI : aucune TVA ne sera portée sur vos factures.',
+    'VAT not applicable, art. 293 B CGI: no VAT will appear on your invoices.',
+  ],
+
+  // ----- Formulaires clients / fournisseurs -----
+  'pme.form.kind': ['Type de tiers', 'Party type'],
+  'pme.form.name': ['Raison sociale ou nom', 'Company or personal name'],
+  'pme.form.contact': ['Personne à contacter', 'Contact person'],
+  'pme.form.email': ['Email', 'Email'],
+  'pme.form.phone': ['Téléphone', 'Phone'],
+  'pme.form.paymentTerms': ['Délai de règlement (jours)', 'Payment terms (days)'],
+  'pme.form.paymentTermsHint': [
+    'Plafond légal entre professionnels : 60 jours. 0 = comptant.',
+    'Legal cap between businesses: 60 days. 0 = immediate.',
+  ],
+  'pme.form.billingAddress': ['Adresse de facturation', 'Billing address'],
+  'pme.form.deliveryAddress': ['Adresse de livraison', 'Delivery address'],
+  'pme.form.deliverySame': [
+    'Livraison à l’adresse de facturation',
+    'Delivery at the billing address',
+  ],
+  'pme.form.deliveryHint': [
+    'Si elle diffère, elle devient une mention obligatoire de la facture.',
+    'If it differs, it becomes a mandatory invoice mention.',
+  ],
+  'pme.form.street': ['Rue', 'Street'],
+  'pme.form.postalCode': ['Code postal', 'Postal code'],
+  'pme.form.city': ['Ville', 'City'],
+  'pme.form.country': ['Pays', 'Country'],
+  'pme.form.legalIdentity': ['Identité légale', 'Legal identity'],
+  'pme.form.siren': ['SIREN', 'SIREN'],
+  'pme.form.sirenHint': [
+    '9 chiffres. Mention obligatoire sur la facture.',
+    '9 digits. Mandatory invoice mention.',
+  ],
+  'pme.form.siret': ['SIRET', 'SIRET'],
+  'pme.form.siretHint': [
+    '14 chiffres, commence par le SIREN.',
+    '14 digits, starts with the SIREN.',
+  ],
+  'pme.form.vatNumber': ['N° TVA intracommunautaire', 'Intra-EU VAT number'],
+  'pme.form.legalForm': ['Forme juridique', 'Legal form'],
+  'pme.form.rcsCity': ['Ville du RCS', 'Trade register city'],
+  'pme.form.shareCapital': ['Capital social (€)', 'Share capital (€)'],
+  'pme.form.napCode': ['Code APE/NAF', 'Business activity code'],
+  'pme.form.notes': ['Notes internes', 'Internal notes'],
+  'pme.form.active': ['Fiche active', 'Active record'],
+  'pme.form.creditLimit': ['Encours autorisé (€)', 'Credit limit (€)'],
+  'pme.form.creditLimitHint': ['0 = pas de plafond suivi.', '0 = no tracked limit.'],
+  'pme.form.iban': ['IBAN', 'IBAN'],
+  'pme.form.defaultNature': ['Nature habituelle des achats', 'Usual purchase nature'],
+
+  'pme.form.newCustomer': ['Nouveau client', 'New customer'],
+  'pme.form.editCustomer': ['Modifier le client', 'Edit customer'],
+  'pme.form.newSupplier': ['Nouveau fournisseur', 'New supplier'],
+  'pme.form.editSupplier': ['Modifier le fournisseur', 'Edit supplier'],
+  'pme.form.subtitleFor': ['Fiche rattachée à {company}', 'Record attached to {company}'],
+
+  'pme.form.error.name': ['La raison sociale est obligatoire.', 'The name is required.'],
+  'pme.form.error.email': ['Adresse email invalide.', 'Invalid email address.'],
+  'pme.form.error.termsNegative': [
+    'Le délai de règlement ne peut pas être négatif.',
+    'Payment terms cannot be negative.',
+  ],
+  'pme.form.error.termsTooLong': [
+    'Le délai de règlement entre professionnels ne peut pas dépasser 60 jours.',
+    'Payment terms between businesses cannot exceed 60 days.',
+  ],
+  'pme.form.error.sirenRequired': [
+    'Le SIREN est obligatoire pour un tiers professionnel.',
+    'The SIREN is required for a professional party.',
+  ],
+  'pme.form.error.siren': ['Le SIREN doit comporter 9 chiffres.', 'The SIREN must be 9 digits.'],
+  'pme.form.error.siret': ['Le SIRET doit comporter 14 chiffres.', 'The SIRET must be 14 digits.'],
+  'pme.form.error.siretMismatch': [
+    'Le SIRET doit commencer par le SIREN saisi.',
+    'The SIRET must start with the entered SIREN.',
+  ],
+  'pme.form.error.vatNumber': [
+    'Numéro de TVA français invalide (FR + clé + 9 chiffres).',
+    'Invalid French VAT number (FR + key + 9 digits).',
+  ],
+  'pme.form.error.iban': ['IBAN invalide.', 'Invalid IBAN.'],
+
+  'pme.form.savedCustomer': ['Client enregistré.', 'Customer saved.'],
+  'pme.form.savedSupplier': ['Fournisseur enregistré.', 'Supplier saved.'],
+  'pme.form.deletedCustomer': ['Client supprimé.', 'Customer deleted.'],
+  'pme.form.deletedSupplier': ['Fournisseur supprimé.', 'Supplier deleted.'],
+  'pme.form.confirmDelete': [
+    'Supprimer définitivement « {name} » ?',
+    'Permanently delete “{name}”?',
   ],
 } as const satisfies Record<string, readonly [string, string]>;
 

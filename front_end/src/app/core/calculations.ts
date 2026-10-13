@@ -96,7 +96,7 @@ export function computeTotals(
     .map(([rate, base]) => ({
       rate,
       base: round(base * ratio),
-      amount: taxation.vatApplicable ? round(((base * ratio) * rate) / 100) : 0,
+      amount: taxation.vatApplicable ? round((base * ratio * rate) / 100) : 0,
     }));
 
   const totalExclVat = round(ventilation.reduce((sum, v) => sum + v.base, 0));
@@ -221,7 +221,10 @@ export function averagePaymentDelay(invoices: Invoice[], payments: Payment[]): n
     if (!received.length || outstanding(invoice, payments) > 0) {
       continue;
     }
-    const last = received.map((p) => p.date).sort().at(-1)!;
+    const last = received
+      .map((p) => p.date)
+      .sort()
+      .at(-1)!;
     delays.push(daysBetween(invoice.issueDate, last));
   }
 

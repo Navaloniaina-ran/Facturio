@@ -1,0 +1,91 @@
+/*
+ * Panneau flottant. Il sort du cadre du tableau, d'où le z-index : sans lui
+ * la ligne suivante le recouvrirait.
+ */
+.action-menu {
+  position: absolute;
+  top: calc(100% + 0.25rem);
+  z-index: 20;
+  min-width: 12rem;
+  padding: 0.25rem;
+  border-radius: 0.5rem;
+  background-color: var(--color-white);
+  box-shadow:
+    0 1px 2px rgb(15 23 42 / 0.08),
+    0 12px 28px -12px rgb(15 23 42 / 0.35);
+  outline: 1px solid var(--color-slate-200);
+  animation: action-menu-in 120ms ease-out;
+}
+
+.action-menu.align-end {
+  right: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .action-menu {
+    animation: none;
+  }
+}
+
+@keyframes action-menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(-0.25rem);
+  }
+}
+
+.action-menu-item {
+  display: flex;
+  width: 100%;
+  cursor: pointer;
+  align-items: center;
+  gap: 0.625rem;
+  border-radius: 0.5rem;
+  padding: 0.5rem 0.625rem;
+  text-align: start;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  white-space: nowrap;
+  color: var(--color-slate-700);
+  transition:
+    background-color 150ms,
+    color 150ms;
+}
+
+.action-menu-item svg {
+  width: 1rem;
+  height: 1rem;
+  flex: none;
+  fill: var(--color-slate-400);
+  transition: fill 150ms;
+}
+
+.action-menu-item:hover {
+  background-color: var(--color-slate-100);
+  color: var(--color-slate-900);
+}
+
+.action-menu-item:hover svg {
+  fill: currentColor;
+}
+
+.action-menu-item:focus-visible {
+  outline: 2px solid var(--color-brand-600);
+  outline-offset: -2px;
+}
+
+/* Les tons reprennent ceux des boutons d'action, pour un même vocabulaire. */
+.action-menu-item.tone-brand:hover {
+  background-color: var(--color-brand-50);
+  color: var(--color-brand-700);
+}
+
+.action-menu-item.tone-success:hover {
+  background-color: var(--color-emerald-50);
+  color: var(--color-emerald-700);
+}
+
+.action-menu-item.tone-danger:hover {
+  background-color: var(--color-rose-50);
+  color: var(--color-rose-700);
+}
