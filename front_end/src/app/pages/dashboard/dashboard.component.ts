@@ -1,11 +1,14 @@
-import { Component, inject, signal } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { Component, computed, inject, signal } from '@angular/core';
+import { RouterLink } from '@angular/router';
+import { AuthService } from '../../core/auth.service';
 import { I18nService } from '../../core/i18n/i18n.service';
 import { AmountPipe } from '../../shared/amount.pipe';
 import { KpiCardComponent } from '../../shared/kpi-card/kpi-card.component';
 import { LocalDatePipe } from '../../shared/local-date.pipe';
 import { StatusBadgeComponent } from '../../shared/status-badge/status-badge.component';
 import { DashboardService } from './dashboard.service';
+import { WorkspaceRoutes } from '../../core/workspace-routes';
+import { ICONS } from '../../shared/icons';
 
 /**
  * Écran affiché dès la connexion (P02) : il répond sans clic supplémentaire à
@@ -18,15 +21,20 @@ import { DashboardService } from './dashboard.service';
   templateUrl: './dashboard.component.html',
 })
 export class DashboardComponent {
-  private readonly router = inject(Router);
+  protected readonly icons = ICONS;
+
+  protected readonly routes = inject(WorkspaceRoutes);
+  private readonly auth = inject(AuthService);
   protected readonly i18n = inject(I18nService);
   protected readonly board = inject(DashboardService);
 
-  /** Message discret affiché lorsque l'accès s'est fait par le portail entreprise. */
-  protected readonly spaceNotice = signal<string | null>(
-    (this.router.getCurrentNavigation()?.extras.state?.['spaceNotice'] as string | undefined) ??
-      null,
-  );
+  /**
+   * Le tableau de bord est commun aux deux espaces, mais deux de ses volets
+   * — campagnes et collaborations — renvoient vers des écrans réservés au
+   * créateur. Les proposer à une PME donnerait des liens que la garde de
+   * route refuse.
+   */
+  protected readonly isCreator = computed(() => this.auth.workspaceType() === 'CREATOR');
 
   protected readonly onboardingHidden = signal(false);
 }

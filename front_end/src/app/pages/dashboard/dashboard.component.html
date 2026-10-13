@@ -1,18 +1,16 @@
 <div class="space-y-6">
-  @if (spaceNotice()) {
-    <p class="rounded-xl bg-sky-50 px-4 py-3 text-sm text-sky-800 ring-1 ring-sky-200">
-      {{ spaceNotice() }}
-    </p>
-  }
-
   <!-- Onboarding progressif tant que le profil est incomplet -->
   @if (board.remainingOnboarding().length && !onboardingHidden()) {
     <section class="card overflow-hidden">
-      <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-4">
+      <div
+        class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-4"
+      >
         <div>
-          <h2 class="text-sm font-semibold text-slate-900">{{ i18n.t('dashboard.onboardingTitle') }}</h2>
+          <h2 class="card-title">{{ i18n.t('dashboard.onboardingTitle') }}</h2>
           <p class="text-xs text-slate-500">
-            {{ i18n.t('dashboard.onboardingSubtitle', { count: board.remainingOnboarding().length }) }}
+            {{
+              i18n.t('dashboard.onboardingSubtitle', { count: board.remainingOnboarding().length })
+            }}
           </p>
         </div>
         <button type="button" class="btn-ghost" (click)="onboardingHidden.set(true)">
@@ -21,12 +19,23 @@
       </div>
       <ul class="grid gap-2 px-5 py-4 sm:grid-cols-2">
         @for (task of board.onboarding(); track task.key) {
-          <li class="flex items-center gap-3 text-sm" [class]="task.done ? 'text-slate-400' : 'text-slate-700'">
+          <li
+            class="flex items-center gap-3 text-sm"
+            [class]="task.done ? 'text-slate-400' : 'text-slate-700'"
+          >
             <span
-              class="grid size-5 shrink-0 place-items-center rounded-full text-[11px] font-bold"
-              [class]="task.done ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-400'"
+              class="grid size-5 shrink-0 place-items-center rounded-full ring-1 ring-inset"
+              [class]="
+                task.done
+                  ? 'bg-emerald-100 text-emerald-700 ring-emerald-200'
+                  : 'bg-white text-transparent ring-slate-200'
+              "
               aria-hidden="true"
-            >{{ task.done ? '✓' : '' }}</span>
+            >
+              <svg viewBox="0 0 24 24" class="size-3.5 fill-current">
+                <path [attr.d]="icons.check" />
+              </svg>
+            </span>
             <span [class.line-through]="task.done">{{ i18n.t(task.labelKey) }}</span>
           </li>
         }
@@ -41,21 +50,22 @@
       [value]="board.revenue() | amount"
       [detail]="i18n.t('kpi.revenueDetail')"
       tone="brand"
-      link="/app/factures"
+      [emphasis]="true"
+      [link]="routes.url('factures')"
     />
     <app-kpi-card
       [label]="i18n.t('kpi.collected')"
       [value]="board.collected() | amount"
       [detail]="i18n.t('kpi.collectedDetail')"
       tone="success"
-      link="/app/paiements"
+      [link]="routes.url('paiements')"
     />
     <app-kpi-card
       [label]="i18n.t('kpi.pending')"
       [value]="board.pending() | amount"
       [detail]="i18n.t('kpi.pendingDetail')"
       tone="warning"
-      link="/app/factures"
+      [link]="routes.url('factures')"
       filter="SENT"
     />
     <app-kpi-card
@@ -63,7 +73,8 @@
       [value]="board.overdueAmount() | amount"
       [detail]="i18n.t('kpi.overdueDetail', { count: board.overdueCount() })"
       tone="danger"
-      link="/app/factures"
+      [alert]="board.overdueCount() > 0"
+      [link]="routes.url('factures')"
       filter="OVERDUE"
     />
   </section>
@@ -71,9 +82,9 @@
   <div class="grid gap-6 lg:grid-cols-3">
     <!-- Courbe des revenus -->
     <section class="card p-5 lg:col-span-2">
-      <div class="flex items-baseline justify-between">
-        <h2 class="text-sm font-semibold text-slate-900">{{ i18n.t('dashboard.revenueChart') }}</h2>
-        <a routerLink="/app/rapports" class="text-xs font-semibold text-brand-600 hover:underline">
+      <div class="card-head">
+        <h2 class="card-title">{{ i18n.t('dashboard.revenueChart') }}</h2>
+        <a [routerLink]="routes.to('rapports')" class="card-link">
           {{ i18n.t('nav.reports') }}
         </a>
       </div>
@@ -81,7 +92,9 @@
       <div class="mt-8 flex h-44 items-end gap-3">
         @for (point of board.lastSixMonths(); track point.month) {
           <div class="flex flex-1 flex-col items-center gap-2">
-            <span class="num text-[11px] font-semibold text-slate-500">{{ point.amount | amount }}</span>
+            <span class="num text-[11px] font-semibold text-slate-500">{{
+              point.amount | amount
+            }}</span>
             <div
               class="w-full rounded-t-lg bg-gradient-to-t from-brand-600 to-brand-400 transition-all"
               [style.height.%]="point.share"
@@ -95,8 +108,8 @@
 
     <!-- Prochaines échéances -->
     <section class="card p-5">
-      <div class="flex items-baseline justify-between">
-        <h2 class="text-sm font-semibold text-slate-900">{{ i18n.t('dashboard.upcoming') }}</h2>
+      <div class="card-head">
+        <h2 class="card-title">{{ i18n.t('dashboard.upcoming') }}</h2>
         <span class="text-xs text-slate-500">{{ i18n.t('dashboard.sevenDays') }}</span>
       </div>
 
@@ -110,59 +123,78 @@
                   {{ invoice.number }} · {{ invoice.dueDate | localDate: 'dayMonth' }}
                 </p>
               </div>
-              <span class="num text-sm font-semibold text-slate-900">{{ invoice.outstanding | amount }}</span>
+              <span class="num text-sm font-semibold text-slate-900">{{
+                invoice.outstanding | amount
+              }}</span>
             </li>
           }
         </ul>
       } @else {
-        <p class="mt-6 text-sm text-slate-500">{{ i18n.t('dashboard.noUpcoming') }}</p>
+        <div class="empty-state mt-4">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path [attr.d]="icons.inbox" />
+          </svg>
+          <p>{{ i18n.t('dashboard.noUpcoming') }}</p>
+        </div>
       }
     </section>
   </div>
 
   <div class="grid gap-6 lg:grid-cols-3">
-    <!-- Campagnes actives -->
-    <section class="card p-5">
-      <div class="flex items-baseline justify-between">
-        <h2 class="text-sm font-semibold text-slate-900">{{ i18n.t('dashboard.activeCampaigns') }}</h2>
-        <a routerLink="/app/campagnes" class="text-xs font-semibold text-brand-600 hover:underline">
-          {{ i18n.t('common.seeAll') }}
-        </a>
-      </div>
+    <!-- Campagnes actives : volet propre a l'espace createur -->
+    @if (isCreator()) {
+      <section class="card p-5">
+        <div class="card-head">
+          <h2 class="card-title">{{ i18n.t('dashboard.activeCampaigns') }}</h2>
+          <a [routerLink]="routes.to('campagnes')" class="card-link">
+            {{ i18n.t('common.seeAll') }}
+          </a>
+        </div>
 
-      @if (board.activeCampaigns().length) {
-        <ul class="mt-4 space-y-4">
-          @for (campaign of board.activeCampaigns(); track campaign.id) {
-            <li>
-              <div class="flex items-baseline justify-between gap-3">
-                <p class="truncate text-sm font-medium text-slate-800">{{ campaign.name }}</p>
-                <span class="num text-sm font-semibold text-slate-900">{{ campaign.totalInclVat | amount }}</span>
-              </div>
-              <p class="text-xs text-slate-500">
-                {{ campaign.brandName }} ·
-                {{ i18n.t('dashboard.deliverableCount', { count: campaign.deliverableCount }) }}
-              </p>
-              <div class="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-100">
-                <div class="h-full rounded-full bg-brand-500" [style.width.%]="campaign.progress"></div>
-              </div>
-            </li>
-          }
-        </ul>
-      } @else {
-        <p class="mt-6 text-sm text-slate-500">{{ i18n.t('dashboard.noCampaign') }}</p>
-      }
-    </section>
+        @if (board.activeCampaigns().length) {
+          <ul class="mt-4 space-y-4">
+            @for (campaign of board.activeCampaigns(); track campaign.id) {
+              <li>
+                <div class="flex items-baseline justify-between gap-3">
+                  <p class="truncate text-sm font-medium text-slate-800">{{ campaign.name }}</p>
+                  <span class="num text-sm font-semibold text-slate-900">{{
+                    campaign.totalInclVat | amount
+                  }}</span>
+                </div>
+                <p class="text-xs text-slate-500">
+                  {{ campaign.brandName }} ·
+                  {{ i18n.t('dashboard.deliverableCount', { count: campaign.deliverableCount }) }}
+                </p>
+                <div class="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-100">
+                  <div
+                    class="h-full rounded-full bg-brand-500"
+                    [style.width.%]="campaign.progress"
+                  ></div>
+                </div>
+              </li>
+            }
+          </ul>
+        } @else {
+          <div class="empty-state mt-4">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path [attr.d]="icons.inbox" />
+            </svg>
+            <p>{{ i18n.t('dashboard.noCampaign') }}</p>
+          </div>
+        }
+      </section>
+    }
 
     <!-- Factures récentes -->
     <section class="card overflow-hidden lg:col-span-2">
-      <div class="flex items-baseline justify-between px-5 py-4">
-        <h2 class="text-sm font-semibold text-slate-900">{{ i18n.t('dashboard.recentInvoices') }}</h2>
-        <a routerLink="/app/factures" class="text-xs font-semibold text-brand-600 hover:underline">
+      <div class="card-head px-5 py-4">
+        <h2 class="card-title">{{ i18n.t('dashboard.recentInvoices') }}</h2>
+        <a [routerLink]="routes.to('factures')" class="card-link">
           {{ i18n.t('common.seeAll') }}
         </a>
       </div>
 
-      <div class="overflow-x-auto">
+      <div class="table-wrap">
         <table class="w-full">
           <tbody class="divide-y divide-slate-100">
             @for (invoice of board.recentInvoices(); track invoice.id) {
@@ -171,16 +203,23 @@
                   {{ invoice.number || i18n.t('common.draft') }}
                 </td>
                 <td class="td-cell">{{ invoice.brandName }}</td>
-                <td class="td-cell num font-semibold text-slate-900">{{ invoice.totalInclVat | amount }}</td>
+                <td class="td-cell num font-semibold text-slate-900">
+                  {{ invoice.totalInclVat | amount }}
+                </td>
                 <td class="td-cell">
                   <app-status-badge
                     [status]="invoice.status"
-                    [extra]="invoice.daysOverdue ? invoice.daysOverdue + ' ' + i18n.t('common.days') : null"
+                    [extra]="
+                      invoice.daysOverdue ? invoice.daysOverdue + ' ' + i18n.t('common.days') : null
+                    "
                   />
                 </td>
                 <td class="td-cell text-right">
                   @if (invoice.status === 'OVERDUE') {
-                    <a routerLink="/app/relances" class="btn-ghost text-brand-600 hover:text-brand-700">
+                    <a
+                      [routerLink]="routes.to('relances')"
+                      class="btn-ghost text-brand-600 hover:text-brand-700"
+                    >
                       {{ i18n.t('dashboard.remind') }}
                     </a>
                   }
@@ -188,7 +227,9 @@
               </tr>
             } @empty {
               <tr>
-                <td class="td-cell text-slate-500" colspan="5">{{ i18n.t('dashboard.noInvoice') }}</td>
+                <td class="td-cell text-slate-500" colspan="5">
+                  {{ i18n.t('dashboard.noInvoice') }}
+                </td>
               </tr>
             }
           </tbody>
@@ -200,9 +241,9 @@
   <!-- Fiabilité des marques et collaborations à suivre -->
   <div class="grid gap-6 lg:grid-cols-3">
     <section class="card p-5 lg:col-span-2">
-      <div class="flex items-baseline justify-between">
-        <h2 class="text-sm font-semibold text-slate-900">{{ i18n.t('dashboard.reliableBrands') }}</h2>
-        <a routerLink="/app/rapports" class="text-xs font-semibold text-brand-600 hover:underline">
+      <div class="card-head">
+        <h2 class="card-title">{{ i18n.t('dashboard.reliableBrands') }}</h2>
+        <a [routerLink]="routes.to('rapports')" class="card-link">
           {{ i18n.t('nav.reports') }}
         </a>
       </div>
@@ -213,7 +254,9 @@
             <li>
               <div class="flex items-baseline justify-between gap-3">
                 <p class="truncate text-sm font-medium text-slate-800">{{ brand.name }}</p>
-                <span class="num text-sm font-semibold text-slate-900">{{ brand.reliability }} / 100</span>
+                <span class="num text-sm font-semibold text-slate-900"
+                  >{{ brand.reliability }} / 100</span
+                >
               </div>
               <p class="text-xs text-slate-500">
                 {{ i18n.t(brand.reliabilityKey) }} ·
@@ -222,7 +265,13 @@
               </p>
               <div class="meter mt-1.5">
                 <span
-                  [class]="brand.reliability >= 65 ? 'bg-emerald-500' : brand.reliability >= 40 ? 'bg-amber-500' : 'bg-rose-500'"
+                  [class]="
+                    brand.reliability >= 65
+                      ? 'bg-emerald-500'
+                      : brand.reliability >= 40
+                        ? 'bg-amber-500'
+                        : 'bg-rose-500'
+                  "
                   [style.width.%]="brand.reliability"
                 ></span>
               </div>
@@ -230,57 +279,75 @@
           }
         </ul>
       } @else {
-        <p class="mt-6 text-sm text-slate-500">{{ i18n.t('dashboard.noReliable') }}</p>
+        <div class="empty-state mt-4">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path [attr.d]="icons.inbox" />
+          </svg>
+          <p>{{ i18n.t('dashboard.noReliable') }}</p>
+        </div>
       }
     </section>
 
-    <section class="card p-5">
-      <div class="flex items-baseline justify-between">
-        <h2 class="text-sm font-semibold text-slate-900">{{ i18n.t('nav.collaborations') }}</h2>
-        <a routerLink="/app/collaborations" class="text-xs font-semibold text-brand-600 hover:underline">
-          {{ i18n.t('common.seeAll') }}
-        </a>
-      </div>
+    <!-- Collaborations : volet propre a l'espace createur -->
+    @if (isCreator()) {
+      <section class="card p-5">
+        <div class="card-head">
+          <h2 class="card-title">{{ i18n.t('nav.collaborations') }}</h2>
+          <a [routerLink]="routes.to('collaborations')" class="card-link">
+            {{ i18n.t('common.seeAll') }}
+          </a>
+        </div>
 
-      <p class="num mt-3 text-2xl font-semibold text-slate-900">{{ board.pipelineValue() | amount }}</p>
-      <p class="text-xs text-slate-500">{{ i18n.t('collaborations.pipelineValue') }}</p>
+        <p class="num mt-3 text-2xl font-semibold text-slate-900">
+          {{ board.pipelineValue() | amount }}
+        </p>
+        <p class="text-xs text-slate-500">{{ i18n.t('collaborations.pipelineValue') }}</p>
 
-      <ul class="mt-4 divide-y divide-slate-100">
-        @for (item of board.nextCollaborations(); track item.id) {
-          <li class="flex items-center justify-between gap-3 py-2 text-sm">
-            <span class="min-w-0 truncate text-slate-700">{{ item.brandName }}</span>
-            <span
-              class="num shrink-0 text-xs"
-              [class]="item.actionDue ? 'font-semibold text-amber-600' : 'text-slate-400'"
-            >
-              {{ item.nextStepDate | localDate: 'dayMonth' }}
-            </span>
-          </li>
-        } @empty {
-          <li class="py-2 text-sm text-slate-500">{{ i18n.t('collaborations.noNextStep') }}</li>
-        }
-      </ul>
-    </section>
+        <ul class="mt-4 divide-y divide-slate-100">
+          @for (item of board.nextCollaborations(); track item.id) {
+            <li class="flex items-center justify-between gap-3 py-2 text-sm">
+              <span class="min-w-0 truncate text-slate-700">{{ item.brandName }}</span>
+              <span
+                class="num shrink-0 text-xs"
+                [class]="item.actionDue ? 'font-semibold text-amber-600' : 'text-slate-400'"
+              >
+                {{ item.nextStepDate | localDate: 'dayMonth' }}
+              </span>
+            </li>
+          } @empty {
+            <li class="py-2 text-sm text-slate-500">{{ i18n.t('collaborations.noNextStep') }}</li>
+          }
+        </ul>
+      </section>
+    }
   </div>
 
   <!-- Fil d'activité -->
   <section class="card p-5">
-    <h2 class="text-sm font-semibold text-slate-900">{{ i18n.t('dashboard.activity') }}</h2>
+    <h2 class="card-title">{{ i18n.t('dashboard.activity') }}</h2>
 
     @if (board.activities().length) {
       <ul class="mt-4 space-y-3">
         @for (activity of board.activities(); track activity.id) {
           <li class="flex items-start gap-3 text-sm">
-            <span class="mt-1.5 size-1.5 shrink-0 rounded-full bg-brand-500" aria-hidden="true"></span>
+            <span
+              class="mt-1.5 size-1.5 shrink-0 rounded-full bg-brand-500"
+              aria-hidden="true"
+            ></span>
             <span class="text-slate-700">{{ i18n.t(activity.messageKey, activity.params) }}</span>
-            <span class="ml-auto shrink-0 text-xs text-slate-400">
+            <span class="ml-auto shrink-0 text-xs text-slate-500">
               {{ activity.date | localDate: 'dayMonth' }}
             </span>
           </li>
         }
       </ul>
     } @else {
-      <p class="mt-4 text-sm text-slate-500">{{ i18n.t('dashboard.noActivity') }}</p>
+      <div class="empty-state mt-4">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path [attr.d]="icons.inbox" />
+        </svg>
+        <p>{{ i18n.t('dashboard.noActivity') }}</p>
+      </div>
     }
   </section>
 </div>

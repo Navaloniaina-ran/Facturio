@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
+import { AuthService } from '../../core/auth.service';
 import { I18nService } from '../../core/i18n/i18n.service';
 import { DashboardComponent } from './dashboard.component';
 import { DashboardService } from './dashboard.service';
@@ -35,8 +36,8 @@ describe('DashboardComponent', () => {
       (link as HTMLAnchorElement).getAttribute('href'),
     );
 
-    expect(targets).toContain('/app/factures?statut=OVERDUE');
-    expect(targets).toContain('/app/paiements');
+    expect(targets).toContain('/createur/factures?statut=OVERDUE');
+    expect(targets).toContain('/createur/paiements');
   });
 
   it('draws six revenue bars and lists active campaigns', async () => {
@@ -64,5 +65,33 @@ describe('DashboardComponent', () => {
     expect(text).toContain('Revenue');
     expect(text).toContain('Active campaigns');
     expect(text).not.toContain('Campagnes actives');
+  });
+
+  // Le tableau de bord est commun, mais deux de ses volets renvoient vers des
+  // écrans que la garde de route refuse à une PME.
+  it('hides the creator-only panels from a BUSINESS workspace', async () => {
+    TestBed.inject(AuthService).signIn('pme@facturio.example', 'demonstration', 'BUSINESS');
+
+    const fixture = await create();
+    const links = [...fixture.nativeElement.querySelectorAll('a')].map((item) =>
+      (item as HTMLAnchorElement).getAttribute('href'),
+    );
+
+    expect(links).not.toContain('/entreprise/campagnes');
+    expect(links).not.toContain('/entreprise/collaborations');
+    // Les volets communs restent en place.
+    expect(links).toContain('/entreprise/factures');
+  });
+
+  it('keeps them for a CREATOR workspace', async () => {
+    TestBed.inject(AuthService).signIn('createur@facturio.example', 'demonstration', 'CREATOR');
+
+    const fixture = await create();
+    const links = [...fixture.nativeElement.querySelectorAll('a')].map((item) =>
+      (item as HTMLAnchorElement).getAttribute('href'),
+    );
+
+    expect(links).toContain('/createur/campagnes');
+    expect(links).toContain('/createur/collaborations');
   });
 });
