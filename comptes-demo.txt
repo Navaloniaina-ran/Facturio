@@ -1,0 +1,53 @@
+COMPTES DE DEMONSTRATION - FACTURIO
+===================================
+
+Deux portails de connexion, deux types d'espace. Pour les comptes ci-dessous,
+le compte determine le profil ouvert, le vocabulaire et la navigation. Meme si
+une adresse est saisie depuis l'autre portail, elle rejoint son propre espace.
+
+
+PROFIL PME / ENTREPRISE  (espace BUSINESS)
+------------------------------------------
+URL        : /entreprises/connexion
+Email      : pme@facturio.example
+Mot passe  : demonstration
+
+Vocabulaire de cet espace : Clients, Projets, Devis, Factures, Relances,
+Prestations.
+
+
+PROFIL INFLUENCEUR / CREATEUR  (espace CREATOR)
+-----------------------------------------------
+URL        : /createurs/connexion
+Email      : createur@facturio.example
+Mot passe  : demonstration
+
+Vocabulaire de cet espace : Marques, Campagnes, Propositions, Factures,
+Relances, Livrables.
+
+
+BOUTONS DE DEMONSTRATION
+------------------------
+Chaque ecran de connexion propose maintenant deux acces directs :
+
+- "Voir la demo createur" ouvre /createur/tableau-de-bord ;
+- "Voir la demo entreprise" ouvre /entreprise/tableau-de-bord.
+
+
+AVERTISSEMENT IMPORTANT
+------------------------
+L'authentification est aujourd'hui une IMPLEMENTATION DE DEMONSTRATION
+(front_end/src/app/core/auth.service.ts). Elle ne verifie aucun identifiant
+contre une base : toute adresse contenant un "@" et tout mot de passe d'au
+moins 6 caracteres ouvrent une session.
+
+Les adresses ci-dessus sont des comptes locaux de test. Leur mot de passe est
+verifie et leur type d'espace est fixe. Les autres adresses valides restent
+acceptees par le prototype et utilisent le type du portail d'entree.
+
+Quand l'API Spring Boot exposera /api/auth/login, le type d'espace devra venir
+du compte retourne par le serveur et non de l'URL d'entree. Le portail ne sera
+alors plus qu'un raccourci d'affichage.
+
+Les adresses utilisent le domaine reserve "example" (RFC 2606) : elles ne
+peuvent atteindre aucune boite reelle.

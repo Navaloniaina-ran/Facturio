@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: fr.facturio.backend.common.util.CurrentWorkspaceTest
+-------------------------------------------------------------------------------
+Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.395 s -- in fr.facturio.backend.common.util.CurrentWorkspaceTest

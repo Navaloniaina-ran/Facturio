@@ -1,0 +1,387 @@
+Tu es un développeur backend senior spécialisé en Java/Spring Boot.
+
+Je veux ajouter à mon SaaS de facturation un système complet de modèles de factures personnalisables.
+
+## OBJECTIF
+
+Le backend doit permettre à chaque utilisateur/entreprise/tenant de :
+
+* créer plusieurs modèles de facture ;
+* modifier un modèle ;
+* dupliquer un modèle ;
+* supprimer un modèle ;
+* définir un modèle par défaut ;
+* enregistrer la configuration visuelle du modèle en JSON ;
+* versionner les modèles ;
+* utiliser un modèle précis lors de la génération d'une facture ;
+* générer un rendu HTML/PDF à partir d'un template + des données d'une facture.
+
+## ÉTAPE 1 — ANALYSER LE PROJET
+
+Avant de modifier le code :
+
+1. Analyse l'architecture backend existante.
+2. Identifie la version de Java et Spring Boot.
+3. Identifie la structure des packages.
+4. Identifie les entités User, Company, Tenant, Customer, Invoice et InvoiceItem existantes.
+5. Identifie le système d'authentification/autorisation.
+6. Identifie le système actuel de génération PDF.
+7. Identifie les repositories, services, controllers et DTO existants.
+8. Identifie les migrations de base de données utilisées.
+9. Réutilise les abstractions existantes.
+10. Ne casse aucune fonctionnalité existante.
+
+Adapte toute l'implémentation aux conventions déjà présentes dans le projet.
+
+---
+
+# 1. ENTITÉS
+
+Créer ou adapter :
+
+### InvoiceTemplate
+
+Conceptuellement :
+
+* id
+* owner/company/tenant selon l'architecture existante
+* name
+* description
+* isDefault
+* currentVersion
+* createdAt
+* updatedAt
+
+### InvoiceTemplateVersion
+
+* id
+* templateId
+* version
+* templateJson
+* createdAt
+
+Ne crée pas userId directement si le projet utilise déjà Company/Tenant comme propriétaire des données.
+
+---
+
+# 2. TEMPLATE JSON
+
+Le template doit être stocké sous forme de JSON.
+
+Exemple :
+
+{
+"version": 1,
+"page": {
+"format": "A4",
+"orientation": "portrait",
+"margin": {
+"top": 30,
+"right": 25,
+"bottom": 30,
+"left": 25
+}
+},
+"theme": {
+"primaryColor": "#2563EB",
+"secondaryColor": "#64748B",
+"fontFamily": "Inter",
+"fontSize": 12
+},
+"blocks": [
+{
+"id": "header",
+"type": "header",
+"position": 0,
+"visible": true,
+"settings": {}
+},
+{
+"id": "customer",
+"type": "customer",
+"position": 1,
+"visible": true,
+"settings": {}
+},
+{
+"id": "invoice-info",
+"type": "invoiceInfo",
+"position": 2,
+"visible": true,
+"settings": {}
+},
+{
+"id": "items",
+"type": "itemsTable",
+"position": 3,
+"visible": true,
+"settings": {}
+},
+{
+"id": "totals",
+"type": "totals",
+"position": 4,
+"visible": true,
+"settings": {}
+},
+{
+"id": "payment",
+"type": "payment",
+"position": 5,
+"visible": true,
+"settings": {}
+},
+{
+"id": "footer",
+"type": "footer",
+"position": 6,
+"visible": true,
+"settings": {}
+}
+]
+}
+
+Utiliser le mécanisme JSON déjà présent dans le projet si disponible.
+
+---
+
+# 3. API REST
+
+Créer les endpoints suivant les conventions existantes.
+
+### Templates
+
+GET
+/api/invoice-templates
+
+GET
+/api/invoice-templates/{id}
+
+POST
+/api/invoice-templates
+
+PUT
+/api/invoice-templates/{id}
+
+DELETE
+/api/invoice-templates/{id}
+
+POST
+/api/invoice-templates/{id}/duplicate
+
+POST
+/api/invoice-templates/{id}/default
+
+### Versions
+
+GET
+/api/invoice-templates/{id}/versions
+
+GET
+/api/invoice-templates/{id}/versions/{version}
+
+POST
+/api/invoice-templates/{id}/versions
+
+Adapter les URLs si le projet utilise une autre convention.
+
+---
+
+# 4. DTO
+
+Ne retourner pas directement les entités JPA.
+
+Créer les DTO nécessaires :
+
+* InvoiceTemplateResponse
+* CreateInvoiceTemplateRequest
+* UpdateInvoiceTemplateRequest
+* InvoiceTemplateVersionResponse
+* CreateInvoiceTemplateVersionRequest
+
+Utiliser la validation Bean Validation déjà utilisée dans le projet.
+
+---
+
+# 5. SÉCURITÉ
+
+IMPORTANT.
+
+Un utilisateur/tenant ne doit jamais pouvoir :
+
+* consulter un template appartenant à quelqu'un d'autre ;
+* modifier un template appartenant à quelqu'un d'autre ;
+* supprimer un template appartenant à quelqu'un d'autre ;
+* utiliser des données d'un autre tenant.
+
+Respecter le système d'autorisation existant.
+
+---
+
+# 6. TEMPLATE PAR DÉFAUT
+
+Un seul template peut être le template par défaut pour une entreprise/tenant.
+
+Lorsqu'un template devient default :
+
+* désactiver l'ancien default ;
+* définir le nouveau default.
+
+Utiliser une transaction pour garantir la cohérence.
+
+---
+
+# 7. VERSIONING
+
+Lorsqu'un template est modifié :
+
+Ne pas écraser l'ancienne version si cela rend impossible le rendu des anciennes factures.
+
+Créer :
+
+V1
+V2
+V3
+
+Une facture déjà générée doit conserver la référence/version utilisée.
+
+Prévoir une structure permettant de retrouver exactement le template utilisé pour une ancienne facture.
+
+---
+
+# 8. PDF / RENDERING
+
+Séparer :
+
+Invoice Data
+
+et
+
+Invoice Template
+
+Architecture :
+
+InvoiceTemplate JSON
++
+Invoice Data
+↓
+Template Renderer
+↓
+HTML/CSS
+↓
+PDF
+
+Ne mélange pas les données financières avec les paramètres graphiques.
+
+Si un système PDF existe déjà, réutilise-le.
+
+Sinon, utiliser une solution serveur adaptée comme Chromium/Playwright ou une technologie compatible avec l'architecture actuelle.
+
+Le rendu doit supporter :
+
+* A4 ;
+* plusieurs pages ;
+* tableaux ;
+* longues descriptions ;
+* header ;
+* footer ;
+* logo ;
+* marges ;
+* sauts de page.
+
+---
+
+# 9. LOGO
+
+Le backend doit permettre de gérer le logo de l'entreprise/template.
+
+Respecter le système de stockage de fichiers déjà présent.
+
+Ne stocke pas inutilement de gros fichiers directement en base de données.
+
+Valider :
+
+* type MIME ;
+* taille maximale ;
+* extension ;
+* nom de fichier.
+
+---
+
+# 10. FACTUR-X / EN 16931
+
+Ne mélange pas le design du template avec les données structurées de la facture.
+
+Le template concerne uniquement la présentation.
+
+L'architecture doit rester compatible avec une future génération :
+
+Facture
+→ données structurées EN 16931
+→ XML Factur-X
+→ PDF visuel
+
+Le template ne doit jamais modifier les données comptables.
+
+---
+
+# 11. TESTS
+
+Ajouter des tests unitaires et/ou d'intégration adaptés au projet :
+
+* création ;
+* modification ;
+* suppression ;
+* duplication ;
+* template par défaut ;
+* versioning ;
+* authorization ;
+* accès cross-tenant ;
+* validation JSON ;
+* rendu PDF.
+
+Utiliser les frameworks de test déjà utilisés dans le projet.
+
+---
+
+# 12. MIGRATION DATABASE
+
+Créer la migration nécessaire avec le système déjà utilisé par le projet :
+
+Flyway / Liquibase / autre.
+
+Ne modifie pas manuellement la base de données sans migration.
+
+---
+
+# 13. QUALITÉ
+
+Respecter :
+
+* SOLID ;
+* séparation Controller / Service / Repository ;
+* DTO ;
+* validation ;
+* gestion des exceptions ;
+* transactions ;
+* logs ;
+* sécurité ;
+* conventions existantes.
+
+Ne réécris pas les parties existantes sans raison.
+
+## LIVRABLE
+
+À la fin :
+
+1. Liste les fichiers créés.
+2. Liste les fichiers modifiés.
+3. Explique les nouvelles API.
+4. Explique le modèle de données.
+5. Explique le versioning.
+6. Explique le système de rendu.
+7. Lance les tests.
+8. Corrige les erreurs.
+9. Vérifie la compilation complète du backend.
+
+Ne crée pas de frontend dans cette tâche.

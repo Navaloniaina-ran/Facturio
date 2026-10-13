@@ -1,0 +1,5 @@
+fr\facturio\backend\auth\util\TokenUtilTest.class
+fr\facturio\backend\BackendApplicationTests.class
+fr\facturio\backend\shared\billing\util\FinancialCalculatorTest.class
+fr\facturio\backend\common\util\ApiResponsesTest.class
+fr\facturio\backend\common\util\CurrentWorkspaceTest.class
