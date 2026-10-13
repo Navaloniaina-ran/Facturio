@@ -1,0 +1,18 @@
+# Secrets et configuration locale
+back_end/.env
+*.env.local
+.claude/settings.local.json
+
+# Fichiers personnels et notes
+Txt.txt
+comptes-demo.txt
+.vscode/
+
+# Fichiers televerses par les utilisateurs
+back_end/uploads/
+
+# Images personnelles (captures, visuels de test)
+front_end/public/ChatGPT*.png
+
+# Build et dependances
+back_end/target/
