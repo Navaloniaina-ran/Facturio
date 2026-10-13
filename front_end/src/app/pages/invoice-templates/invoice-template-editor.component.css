@@ -1,0 +1,41 @@
+/*
+ * Trois colonnes sur grand écran : blocs, aperçu, propriétés.
+ * Sous 1024 px, seul l'aperçu reste ; les panneaux passent en tiroirs.
+ */
+.editor {
+  display: grid;
+  gap: 1.25rem;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 1024px) {
+  .editor {
+    grid-template-columns: 17rem minmax(0, 1fr) 19rem;
+    align-items: start;
+  }
+}
+
+/* Les panneaux latéraux suivent le défilement du contenu. */
+@media (min-width: 1024px) {
+  .side-panel {
+    max-height: calc(100dvh - 14rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    position: sticky;
+    top: 0;
+  }
+}
+
+/* Tiroir mobile : plein écran par le bas, corps défilant. */
+.drawer {
+  display: flex;
+  flex-direction: column;
+  max-height: 85dvh;
+}
+
+.drawer-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}

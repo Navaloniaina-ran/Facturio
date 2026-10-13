@@ -1,0 +1,13 @@
+<!-- printable : seule cette zone sort à l'impression -->
+<article
+  class="printable sheet bg-white"
+  [class.thumbnail]="thumbnail()"
+  [style]="sheetStyle()"
+  [attr.aria-label]="'Aperçu du modèle de facture'"
+>
+  @for (block of visibleBlocks(); track block.id) {
+    <app-template-block-host [block]="block" [settings]="document().settings" [data]="data()" />
+  } @empty {
+    <p class="py-16 text-center text-sm opacity-50">Ajoutez un bloc depuis le panneau de gauche.</p>
+  }
+</article>

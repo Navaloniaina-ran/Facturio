@@ -1,0 +1,91 @@
+<div class="space-y-5">
+  <!-- Palette -->
+  <section>
+    <h2 class="field-label">{{ i18n.t('templates.palette') }}</h2>
+    <ul class="grid grid-cols-2 gap-2">
+      @for (type of palette; track type) {
+        <li>
+          <button
+            type="button"
+            class="w-full rounded-xl bg-white px-3 py-2 text-left text-xs font-medium text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-50 hover:text-slate-900"
+            draggable="true"
+            [attr.aria-label]="i18n.t('templates.addBlock', { block: label(type) })"
+            (dragstart)="startDragType(type, $event)"
+            (dragend)="endDrag()"
+            (click)="add(type)"
+          >
+            + {{ label(type) }}
+          </button>
+        </li>
+      }
+    </ul>
+    <p class="mt-2 text-xs text-slate-500">{{ i18n.t('templates.paletteHint') }}</p>
+  </section>
+
+  <!-- Composition -->
+  <section>
+    <h2 class="field-label">{{ i18n.t('templates.composition') }}</h2>
+
+    <ul class="space-y-1.5" (dragover)="$event.preventDefault()" (drop)="dropAtEnd($event)">
+      @for (block of blocks(); track block.id; let index = $index) {
+        <li
+          class="rounded-xl bg-white ring-1 transition"
+          [class]="
+            store.selectedBlockId() === block.id
+              ? 'ring-brand-400 ring-2'
+              : dropIndex() === index
+                ? 'ring-brand-300'
+                : 'ring-slate-200'
+          "
+          draggable="true"
+          (dragstart)="startDragBlock(index, $event)"
+          (dragover)="over(index, $event)"
+          (drop)="drop(index, $event)"
+          (dragend)="endDrag()"
+        >
+          <div class="flex items-center gap-1 px-2 py-1.5">
+            <span class="cursor-grab select-none px-1 text-slate-300" aria-hidden="true">⠿</span>
+
+            <button
+              type="button"
+              class="min-w-0 flex-1 truncate text-left text-xs font-medium"
+              [class]="block.visible ? 'text-slate-800' : 'text-slate-400 line-through'"
+              [attr.aria-pressed]="store.selectedBlockId() === block.id"
+              (click)="store.selectBlock(block.id)"
+            >
+              {{ label(block.type) }}
+            </button>
+
+            <app-icon-button
+              icon="convert"
+              [label]="i18n.t('templates.moveUp')"
+              (action)="moveUp(index)"
+            />
+            <app-icon-button
+              icon="postpone"
+              [label]="i18n.t('templates.moveDown')"
+              (action)="moveDown(index)"
+            />
+            <app-icon-button
+              [icon]="block.visible ? 'view' : 'pause'"
+              [label]="block.visible ? i18n.t('templates.hide') : i18n.t('templates.show')"
+              (action)="store.toggleBlock(block.id)"
+            />
+            <app-icon-button
+              icon="delete"
+              tone="danger"
+              [label]="i18n.t('templates.removeBlock')"
+              (action)="store.removeBlock(block.id)"
+            />
+          </div>
+        </li>
+      } @empty {
+        <li
+          class="rounded-xl bg-white px-3 py-6 text-center text-xs text-slate-500 ring-1 ring-slate-200"
+        >
+          {{ i18n.t('templates.noBlock') }}
+        </li>
+      }
+    </ul>
+  </section>
+</div>

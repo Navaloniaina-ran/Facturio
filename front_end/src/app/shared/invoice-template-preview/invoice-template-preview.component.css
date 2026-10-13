@@ -1,0 +1,27 @@
+/* Feuille A4 : proportions stables quelle que soit la largeur disponible. */
+.sheet {
+  aspect-ratio: 210 / 297;
+  container-type: inline-size;
+  overflow: hidden;
+  width: 100%;
+}
+
+/* Vignette de la liste : le contenu est mis à l'échelle, pas re-mis en page. */
+.thumbnail {
+  aspect-ratio: 210 / 260;
+  pointer-events: none;
+}
+
+@container (max-width: 22rem) {
+  .sheet {
+    font-size: 0.62em;
+  }
+}
+
+@media print {
+  .sheet {
+    aspect-ratio: auto;
+    border: none !important;
+    width: 100%;
+  }
+}

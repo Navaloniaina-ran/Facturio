@@ -1,0 +1,392 @@
+@if (theme(); as theme) {
+  @if (page(); as page) {
+    <div class="space-y-6">
+      <!-- Couleurs -->
+      <section>
+        <h2 class="field-label">{{ i18n.t('templates.colors') }}</h2>
+        <div class="space-y-2">
+          <label class="flex items-center justify-between gap-3 text-xs text-slate-600">
+            {{ i18n.t('templates.primaryColor') }}
+            <input
+              type="color"
+              class="h-8 w-14 cursor-pointer rounded-lg ring-1 ring-slate-200"
+              name="primaryColor"
+              [ngModel]="theme.primaryColor"
+              (ngModelChange)="store.updateTheme({ primaryColor: $event })"
+            />
+          </label>
+          <label class="flex items-center justify-between gap-3 text-xs text-slate-600">
+            {{ i18n.t('templates.secondaryColor') }}
+            <input
+              type="color"
+              class="h-8 w-14 cursor-pointer rounded-lg ring-1 ring-slate-200"
+              name="secondaryColor"
+              [ngModel]="theme.secondaryColor"
+              (ngModelChange)="store.updateTheme({ secondaryColor: $event })"
+            />
+          </label>
+          <label class="flex items-center justify-between gap-3 text-xs text-slate-600">
+            {{ i18n.t('templates.textColor') }}
+            <input
+              type="color"
+              class="h-8 w-14 cursor-pointer rounded-lg ring-1 ring-slate-200"
+              name="textColor"
+              [ngModel]="theme.textColor"
+              (ngModelChange)="store.updateTheme({ textColor: $event })"
+            />
+          </label>
+          <label class="flex items-center justify-between gap-3 text-xs text-slate-600">
+            {{ i18n.t('templates.borderColor') }}
+            <input
+              type="color"
+              class="h-8 w-14 cursor-pointer rounded-lg ring-1 ring-slate-200"
+              name="borderColor"
+              [ngModel]="theme.borderColor"
+              (ngModelChange)="store.updateTheme({ borderColor: $event })"
+            />
+          </label>
+          <label class="flex items-center justify-between gap-3 text-xs text-slate-600">
+            {{ i18n.t('templates.tableHeaderColor') }}
+            <input
+              type="color"
+              class="h-8 w-14 cursor-pointer rounded-lg ring-1 ring-slate-200"
+              name="tableHeaderColor"
+              [ngModel]="theme.tableHeaderColor"
+              (ngModelChange)="store.updateTheme({ tableHeaderColor: $event })"
+            />
+          </label>
+        </div>
+      </section>
+
+      <!-- Police -->
+      <section>
+        <h2 class="field-label">{{ i18n.t('templates.typography') }}</h2>
+        <div class="space-y-3">
+          <div>
+            <label class="mb-1 block text-xs text-slate-600" for="fontFamily">
+              {{ i18n.t('templates.fontFamily') }}
+            </label>
+            <select
+              id="fontFamily"
+              name="fontFamily"
+              class="field"
+              [ngModel]="theme.fontFamily"
+              (ngModelChange)="store.updateTheme({ fontFamily: $event })"
+            >
+              @for (font of fonts; track font) {
+                <option [value]="font">{{ font }}</option>
+              }
+            </select>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="mb-1 block text-xs text-slate-600" for="fontSize">
+                {{ i18n.t('templates.fontSize') }}
+              </label>
+              <input
+                id="fontSize"
+                name="fontSize"
+                type="number"
+                min="9"
+                max="20"
+                class="field"
+                [ngModel]="theme.fontSize"
+                (ngModelChange)="store.updateTheme({ fontSize: +$event })"
+              />
+            </div>
+            <div>
+              <label class="mb-1 block text-xs text-slate-600" for="fontWeight">
+                {{ i18n.t('templates.fontWeight') }}
+              </label>
+              <select
+                id="fontWeight"
+                name="fontWeight"
+                class="field"
+                [ngModel]="theme.fontWeight"
+                (ngModelChange)="store.updateTheme({ fontWeight: +$event })"
+              >
+                @for (weight of [300, 400, 500, 600, 700]; track weight) {
+                  <option [value]="weight">{{ weight }}</option>
+                }
+              </select>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Mise en page -->
+      <section>
+        <h2 class="field-label">{{ i18n.t('templates.layout') }}</h2>
+        <div class="space-y-3">
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="mb-1 block text-xs text-slate-600" for="margin">
+                {{ i18n.t('templates.margin') }}
+              </label>
+              <input
+                id="margin"
+                name="margin"
+                type="number"
+                min="0"
+                max="40"
+                class="field"
+                [ngModel]="page.margin"
+                (ngModelChange)="store.updatePage({ margin: +$event })"
+              />
+            </div>
+            <div>
+              <label class="mb-1 block text-xs text-slate-600" for="padding">
+                {{ i18n.t('templates.padding') }}
+              </label>
+              <input
+                id="padding"
+                name="padding"
+                type="number"
+                min="0"
+                max="48"
+                class="field"
+                [ngModel]="page.padding"
+                (ngModelChange)="store.updatePage({ padding: +$event })"
+              />
+            </div>
+          </div>
+
+          <div>
+            <span class="mb-1 block text-xs text-slate-600">{{
+              i18n.t('templates.alignment')
+            }}</span>
+            <div class="segmented w-full">
+              @for (alignment of alignments; track alignment) {
+                <button
+                  type="button"
+                  class="flex-1"
+                  [attr.aria-pressed]="page.alignment === alignment"
+                  (click)="store.updatePage({ alignment: alignment })"
+                >
+                  {{ alignmentLabel(alignment) }}
+                </button>
+              }
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 items-end gap-3">
+            <label class="flex items-center gap-2 text-xs text-slate-600">
+              <input
+                type="checkbox"
+                name="border"
+                class="size-4 rounded accent-brand-600"
+                [ngModel]="page.border"
+                (ngModelChange)="store.updatePage({ border: $event })"
+              />
+              {{ i18n.t('templates.border') }}
+            </label>
+            <div>
+              <label class="mb-1 block text-xs text-slate-600" for="borderRadius">
+                {{ i18n.t('templates.borderRadius') }}
+              </label>
+              <input
+                id="borderRadius"
+                name="borderRadius"
+                type="number"
+                min="0"
+                max="32"
+                class="field"
+                [ngModel]="page.borderRadius"
+                (ngModelChange)="store.updatePage({ borderRadius: +$event })"
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Bloc sélectionné -->
+      @if (block(); as block) {
+        <section class="border-t border-slate-100 pt-5">
+          <h2 class="field-label">
+            {{ i18n.t('templates.blockSettings', { block: blockLabel() }) }}
+          </h2>
+
+          <div class="space-y-3">
+            <div>
+              <label class="mb-1 block text-xs text-slate-600" for="blockTitle">
+                {{ i18n.t('templates.blockTitle') }}
+              </label>
+              <input
+                id="blockTitle"
+                name="blockTitle"
+                class="field"
+                [ngModel]="block.settings.title"
+                (ngModelChange)="store.updateBlockSettings(block.id, { title: $event })"
+              />
+            </div>
+
+            <div>
+              <span class="mb-1 block text-xs text-slate-600">{{
+                i18n.t('templates.alignment')
+              }}</span>
+              <div class="segmented w-full">
+                @for (alignment of alignments; track alignment) {
+                  <button
+                    type="button"
+                    class="flex-1"
+                    [attr.aria-pressed]="block.settings.alignment === alignment"
+                    (click)="store.updateBlockSettings(block.id, { alignment: alignment })"
+                  >
+                    {{ alignmentLabel(alignment) }}
+                  </button>
+                }
+              </div>
+            </div>
+
+            <!-- Logo : téléversement par l'API -->
+            @if (block.type === 'logo') {
+              <div>
+                <label class="mb-1 block text-xs text-slate-600" for="logoWidth">
+                  {{ i18n.t('templates.logoWidth') }}
+                </label>
+                <input
+                  id="logoWidth"
+                  name="logoWidth"
+                  type="number"
+                  min="60"
+                  max="320"
+                  class="field"
+                  [ngModel]="block.settings.logoWidth"
+                  (ngModelChange)="store.updateBlockSettings(block.id, { logoWidth: +$event })"
+                />
+              </div>
+              <div>
+                <label class="mb-1 block text-xs text-slate-600" for="logoFile">
+                  {{ i18n.t('templates.logoUpload') }}
+                </label>
+                <input
+                  id="logoFile"
+                  name="logoFile"
+                  type="file"
+                  accept="image/png,image/jpeg"
+                  class="field cursor-pointer text-xs"
+                  (change)="pickLogo($event)"
+                />
+                <p class="mt-1 text-xs text-slate-500">{{ i18n.t('templates.logoHint') }}</p>
+              </div>
+            }
+
+            <!-- Tableau des produits : colonnes -->
+            @if (block.type === 'items') {
+              <div>
+                <span class="mb-1 block text-xs text-slate-600">{{
+                  i18n.t('templates.columns')
+                }}</span>
+                <ul class="space-y-1.5">
+                  @for (column of columns(); track column.key; let index = $index) {
+                    <li class="flex items-center gap-1 rounded-xl bg-slate-50 px-2 py-1.5">
+                      <input
+                        type="checkbox"
+                        class="size-4 rounded accent-brand-600"
+                        [checked]="column.visible"
+                        [attr.aria-label]="columnLabel(column.key)"
+                        (change)="toggleColumn(column.key)"
+                      />
+                      <span
+                        class="min-w-0 flex-1 truncate text-xs"
+                        [class]="column.visible ? 'text-slate-700' : 'text-slate-400 line-through'"
+                      >
+                        {{ columnLabel(column.key) }}
+                      </span>
+
+                      <select
+                        class="rounded-lg bg-white px-1 py-0.5 text-xs ring-1 ring-slate-200"
+                        [attr.aria-label]="i18n.t('templates.alignment')"
+                        [ngModel]="column.align"
+                        [ngModelOptions]="{ standalone: true }"
+                        (ngModelChange)="setColumnAlignment(column.key, $event)"
+                      >
+                        @for (alignment of alignments; track alignment) {
+                          <option [value]="alignment">{{ alignmentLabel(alignment) }}</option>
+                        }
+                      </select>
+
+                      <app-icon-button
+                        icon="convert"
+                        [label]="i18n.t('templates.moveUp')"
+                        (action)="moveColumn(index, -1)"
+                      />
+                      <app-icon-button
+                        icon="postpone"
+                        [label]="i18n.t('templates.moveDown')"
+                        (action)="moveColumn(index, 1)"
+                      />
+                    </li>
+                  }
+                </ul>
+              </div>
+            }
+
+            <!-- Totaux -->
+            @if (block.type === 'totals') {
+              <div class="space-y-2">
+                <label class="flex items-center gap-2 text-xs text-slate-600">
+                  <input
+                    type="checkbox"
+                    class="size-4 rounded accent-brand-600"
+                    [checked]="block.settings.showVatBreakdown"
+                    (change)="
+                      store.updateBlockSettings(block.id, {
+                        showVatBreakdown: !block.settings.showVatBreakdown,
+                      })
+                    "
+                  />
+                  {{ i18n.t('templates.showVat') }}
+                </label>
+                <label class="flex items-center gap-2 text-xs text-slate-600">
+                  <input
+                    type="checkbox"
+                    class="size-4 rounded accent-brand-600"
+                    [checked]="block.settings.showDeposit"
+                    (change)="
+                      store.updateBlockSettings(block.id, {
+                        showDeposit: !block.settings.showDeposit,
+                      })
+                    "
+                  />
+                  {{ i18n.t('templates.showDeposit') }}
+                </label>
+                <label class="flex items-center gap-2 text-xs text-slate-600">
+                  <input
+                    type="checkbox"
+                    class="size-4 rounded accent-brand-600"
+                    [checked]="block.settings.showOutstanding"
+                    (change)="
+                      store.updateBlockSettings(block.id, {
+                        showOutstanding: !block.settings.showOutstanding,
+                      })
+                    "
+                  />
+                  {{ i18n.t('templates.showOutstanding') }}
+                </label>
+              </div>
+            }
+
+            <!-- Texte libre -->
+            @if (block.type === 'notes' || block.type === 'footer') {
+              <div>
+                <label class="mb-1 block text-xs text-slate-600" for="blockText">
+                  {{ i18n.t('templates.blockText') }}
+                </label>
+                <textarea
+                  id="blockText"
+                  name="blockText"
+                  rows="3"
+                  class="field"
+                  [ngModel]="block.settings.text"
+                  (ngModelChange)="store.updateBlockSettings(block.id, { text: $event })"
+                ></textarea>
+              </div>
+            }
+          </div>
+        </section>
+      }
+    </div>
+  }
+}

@@ -1,0 +1,123 @@
+@if (notFound()) {
+  <!-- 404 renvoyé par l'API : rien à éditer -->
+  <div class="card p-10 text-center">
+    <p class="text-sm font-semibold text-slate-900">{{ i18n.t('templates.notFound') }}</p>
+    <button type="button" class="btn-secondary mt-5" (click)="cancel()">
+      {{ i18n.t('templates.backToList') }}
+    </button>
+  </div>
+} @else if (store.draft(); as template) {
+  <div class="space-y-5">
+    <!-- Barre d'actions -->
+    <div class="page-head">
+      <div class="min-w-0">
+        <input
+          class="field max-w-sm text-base font-semibold"
+          name="templateName"
+          [attr.aria-label]="i18n.t('templates.name')"
+          [ngModel]="template.name"
+          (ngModelChange)="store.rename($event)"
+        />
+        <p class="mt-1 text-xs">
+          @if (store.saving()) {
+            <span class="text-slate-500">{{ i18n.t('templates.saving') }}</span>
+          } @else if (store.dirty()) {
+            <span class="text-amber-600">{{ i18n.t('templates.unsaved') }}</span>
+          } @else if (store.savedAt()) {
+            <span class="text-emerald-600">{{ i18n.t('templates.saved') }}</span>
+          } @else {
+            <span class="text-slate-400">{{ i18n.t('templates.upToDate') }}</span>
+          }
+        </p>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-2">
+        <label class="flex items-center gap-2 text-xs text-slate-600">
+          <input
+            type="checkbox"
+            class="size-4 rounded accent-brand-600"
+            [checked]="store.autoSave()"
+            (change)="toggleAutoSave(!store.autoSave())"
+          />
+          {{ i18n.t('templates.autoSave') }}
+        </label>
+
+        <button type="button" class="btn-secondary lg:hidden" (click)="openDrawer('blocks')">
+          {{ i18n.t('templates.blocks') }}
+        </button>
+        <button type="button" class="btn-secondary lg:hidden" (click)="openDrawer('properties')">
+          {{ i18n.t('templates.properties') }}
+        </button>
+
+        <button type="button" class="btn-secondary" (click)="fullPreview.set(true)">
+          {{ i18n.t('templates.preview') }}
+        </button>
+        <button
+          type="button"
+          class="btn-secondary"
+          [disabled]="downloading()"
+          (click)="downloadPdf()"
+        >
+          {{ i18n.t('templates.downloadPdf') }}
+        </button>
+        <button type="button" class="btn-secondary" (click)="cancel()">
+          {{ i18n.t('common.cancel') }}
+        </button>
+        <button
+          type="button"
+          class="btn-primary"
+          [disabled]="store.saving() || !store.dirty()"
+          (click)="save()"
+        >
+          {{ i18n.t('common.save') }}
+        </button>
+      </div>
+    </div>
+
+    @if (store.offline()) {
+      <p class="alert-warning">{{ i18n.t('templates.offline') }}</p>
+    }
+
+    <!-- Trois colonnes -->
+    <div class="editor">
+      <aside class="card side-panel hidden p-4 lg:block">
+        <app-template-blocks-panel />
+      </aside>
+
+      <section class="card p-4">
+        <app-invoice-template-preview [document]="template.templateJson" />
+      </section>
+
+      <aside class="card side-panel hidden p-4 lg:block">
+        <app-template-properties-panel />
+      </aside>
+    </div>
+  </div>
+
+  <!-- Tiroirs mobiles -->
+  @if (drawer() === 'blocks') {
+    <app-modal [title]="i18n.t('templates.blocks')" (closed)="closeDrawer()">
+      <app-template-blocks-panel />
+    </app-modal>
+  }
+  @if (drawer() === 'properties') {
+    <app-modal [title]="i18n.t('templates.properties')" (closed)="closeDrawer()">
+      <app-template-properties-panel />
+    </app-modal>
+  }
+
+  <!-- Aperçu plein écran, imprimable -->
+  @if (fullPreview()) {
+    <app-modal
+      [title]="i18n.t('templates.preview')"
+      [subtitle]="template.name"
+      [wide]="true"
+      (closed)="fullPreview.set(false)"
+    >
+      <app-invoice-template-preview [document]="template.templateJson" />
+    </app-modal>
+  }
+} @else {
+  <!-- Chargement -->
+  <div class="card h-96 animate-pulse bg-slate-100/60" aria-busy="true"></div>
+}
