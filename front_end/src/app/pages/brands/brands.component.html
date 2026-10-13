@@ -1,130 +1,545 @@
 <div class="space-y-5">
-  <!-- En-tête -->
-  <div class="flex flex-wrap items-end justify-between gap-4">
-    <div>
-      <h1 class="text-xl font-semibold text-slate-900">{{ i18n.vocab('clients') }}</h1>
-      <p class="mt-1 text-sm text-slate-500">
-        {{ i18n.t('brands.subtitle', { count: service.list().length, late: service.latePayerCount() }) }}
-      </p>
-    </div>
-    <div class="flex gap-2">
-      <button type="button" class="btn-secondary" (click)="exportCsv()">{{ i18n.t('common.export') }}</button>
-      <button type="button" class="btn-primary" (click)="openCreate()">{{ i18n.t('brands.new') }}</button>
-    </div>
-  </div>
+  <app-page-header
+    icon="brandTag"
+    [title]="i18n.vocab('clients')"
+    [subtitle]="i18n.t('brands.subtitle', { count: totals().count, late: totals().late })"
+  >
+    <button type="button" class="btn-secondary cursor-pointer" (click)="exportCsv()">
+      <svg viewBox="0 0 24 24" class="size-4 fill-current" aria-hidden="true">
+        <path d="M12 3v10.6l3.3-3.3 1.4 1.4L12 17.4l-4.7-4.7 1.4-1.4L11 13.6V3h1zM5 19h14v2H5z" />
+      </svg>
+      {{ i18n.t('common.export') }}
+    </button>
+    <button type="button" class="btn-primary cursor-pointer" (click)="openCreate()">
+      <svg viewBox="0 0 24 24" class="size-4 fill-current" aria-hidden="true">
+        <path d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6V5z" />
+      </svg>
+      {{ i18n.t('brands.new') }}
+    </button>
+  </app-page-header>
 
   @if (message()) {
-    <p class="rounded-xl bg-brand-50 px-4 py-3 text-sm text-brand-800 ring-1 ring-brand-200">{{ message() }}</p>
+    <p class="flash" role="status">{{ message() }}</p>
   }
 
-  <!-- Filtres -->
-  <div class="flex flex-wrap items-center gap-3">
-    <input
-      class="field max-w-xs"
-      type="search"
-      name="search"
-      [placeholder]="i18n.t('brands.searchPlaceholder')"
-      [attr.aria-label]="i18n.t('brands.searchLabel')"
-      [ngModel]="search()"
-      (ngModelChange)="search.set($event)"
-    />
+  <!-- Synthèse du portefeuille. Chaque tuile réoriente la liste. -->
+  <section class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
     <button
       type="button"
-      class="rounded-full px-3.5 py-1.5 text-sm font-medium ring-1 transition"
-      [class]="latePayersOnly() ? 'bg-rose-600 text-white ring-rose-600' : 'bg-white text-slate-600 ring-slate-200 hover:bg-slate-50'"
-      [attr.aria-pressed]="latePayersOnly()"
-      (click)="latePayersOnly.set(!latePayersOnly())"
+      class="card card-interactive relative cursor-pointer overflow-hidden p-4 text-left"
+      [class]="filter() === 'all' ? 'ring-2 ring-brand-500' : ''"
+      [attr.aria-pressed]="filter() === 'all'"
+      (click)="filter.set('all'); setSort('name')"
     >
-      {{ i18n.t('brands.badPayers') }}
+      <span
+        class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-brand-500 to-brand-700"
+        aria-hidden="true"
+      ></span>
+      <p class="stat-label font-semibold uppercase">{{ i18n.t('brands.kpi.portfolio') }}</p>
+      <p class="stat-value text-2xl">{{ totals().count }}</p>
+      <p class="mt-1 text-xs text-slate-500">{{ i18n.t('brands.kpi.portfolioDetail') }}</p>
     </button>
-  </div>
 
-  <!-- Liste -->
-  <div class="card overflow-hidden">
-    <div class="overflow-x-auto">
-      <table class="w-full min-w-[54rem]">
-        <thead class="bg-slate-50/80">
-          <tr>
-            <th class="th-cell">{{ i18n.t('brands.col.brand') }}</th>
-            <th class="th-cell">{{ i18n.t('brands.col.contact') }}</th>
-            <th class="th-cell text-right">{{ i18n.t('brands.col.invoices') }}</th>
-            <th class="th-cell text-right">{{ i18n.t('brands.col.invoiced') }}</th>
-            <th class="th-cell text-right">{{ i18n.t('brands.col.outstanding') }}</th>
-            <th class="th-cell">{{ i18n.t('brands.col.lastActivity') }}</th>
-            <th class="th-cell text-right">{{ i18n.t('brands.col.actions') }}</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-slate-100">
-          @for (brand of filtered(); track brand.id) {
-            <tr class="hover:bg-slate-50/70">
-              <td class="td-cell">
-                <button
-                  type="button"
-                  class="text-left font-semibold text-slate-900 hover:text-brand-600"
-                  (click)="openSheet(brand)"
-                >
-                  {{ brand.name }}
-                </button>
-                <div class="mt-1 flex gap-1.5">
-                  @if (brand.latePayer) {
-                    <app-status-badge status="OVERDUE" />
-                  }
-                  @if (brand.remindersPaused) {
-                    <span class="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-500">
-                      {{ i18n.t('brands.paused') }}
+    <button
+      type="button"
+      class="card card-interactive relative cursor-pointer overflow-hidden p-4 text-left"
+      [class]="sortKey() === 'invoiced' ? 'ring-2 ring-brand-500' : ''"
+      [attr.aria-pressed]="sortKey() === 'invoiced'"
+      (click)="setSort('invoiced')"
+    >
+      <span
+        class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-sky-400 to-sky-600"
+        aria-hidden="true"
+      ></span>
+      <p class="stat-label font-semibold uppercase">{{ i18n.t('brands.kpi.invoiced') }}</p>
+      <p class="stat-value text-2xl">{{ totals().invoiced | amount }}</p>
+      <p class="mt-1 text-xs text-slate-500">{{ i18n.t('brands.kpi.invoicedDetail') }}</p>
+    </button>
+
+    <button
+      type="button"
+      class="card card-interactive relative cursor-pointer overflow-hidden p-4 text-left"
+      [class]="sortKey() === 'outstanding' ? 'ring-2 ring-brand-500' : ''"
+      [attr.aria-pressed]="sortKey() === 'outstanding'"
+      (click)="setSort('outstanding')"
+    >
+      <span
+        class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-amber-400 to-amber-600"
+        aria-hidden="true"
+      ></span>
+      <p class="stat-label font-semibold uppercase">{{ i18n.t('brands.kpi.outstanding') }}</p>
+      <p class="stat-value text-2xl">{{ totals().outstanding | amount }}</p>
+      <p class="mt-1 text-xs text-slate-500">
+        {{ i18n.t('brands.kpi.outstandingDetail', { count: totals().owing }) }}
+      </p>
+    </button>
+
+    <button
+      type="button"
+      class="card card-interactive relative cursor-pointer overflow-hidden p-4 text-left"
+      [class]="filter() === 'late' ? 'ring-2 ring-rose-500' : ''"
+      [attr.aria-pressed]="filter() === 'late'"
+      (click)="filter.set('late')"
+    >
+      <span
+        class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-rose-400 to-rose-600"
+        aria-hidden="true"
+      ></span>
+      <p class="stat-label font-semibold uppercase">{{ i18n.t('brands.kpi.late') }}</p>
+      <p class="stat-value text-2xl" [class]="totals().late ? 'text-rose-600' : ''">
+        {{ totals().late }}
+      </p>
+      <p class="mt-1 text-xs text-slate-500">{{ i18n.t('brands.kpi.lateDetail') }}</p>
+    </button>
+  </section>
+
+  <!-- Barre d'outils : recherche, segments chiffrés, tri, affichage -->
+  <section class="card p-3 sm:p-4">
+    <div class="flex flex-wrap items-center gap-3">
+      <app-search-field
+        [value]="search()"
+        [placeholder]="i18n.t('brands.searchPlaceholder')"
+        [label]="i18n.t('brands.searchLabel')"
+        [shortcut]="!modal()"
+        (valueChange)="search.set($event)"
+      />
+
+      <app-filter-segments
+        [segments]="filterSegments()"
+        [active]="filter()"
+        [label]="i18n.t('brands.filter.label')"
+        (select)="filter.set($any($event))"
+      />
+
+      <div class="ml-auto flex items-center gap-2">
+        <label class="sr-only" for="brand-sort">{{ i18n.t('brands.sort.label') }}</label>
+        <select
+          id="brand-sort"
+          name="brand-sort"
+          class="field h-11 w-auto cursor-pointer py-0"
+          [ngModel]="sortKey()"
+          (ngModelChange)="setSort($event)"
+        >
+          @for (option of sorts; track option.key) {
+            <option [value]="option.key">{{ i18n.t(option.labelKey) }}</option>
+          }
+        </select>
+
+        <app-view-switch [value]="view()" (valueChange)="view.set($event)" />
+      </div>
+    </div>
+
+    <app-result-bar
+      [count]="filtered().length"
+      [total]="totals().count"
+      [chips]="filterChips()"
+      (reset)="resetFilters()"
+    />
+  </section>
+
+  @if (!filtered().length) {
+    <!-- État vide : on distingue le portefeuille neuf du filtre trop étroit -->
+    <div class="card flex flex-col items-center px-6 py-14 text-center">
+      <span
+        class="grid size-16 place-items-center rounded-2xl bg-brand-50 text-brand-600 ring-1 ring-brand-100"
+        aria-hidden="true"
+      >
+        <svg viewBox="0 0 24 24" class="size-8 fill-current">
+          <path
+            d="M11 2H4a2 2 0 0 0-2 2v7l11 11 9-9L11 2zM7.5 9A1.5 1.5 0 1 1 9 7.5 1.5 1.5 0 0 1 7.5 9z"
+          />
+        </svg>
+      </span>
+
+      @if (hasFilters()) {
+        <h2 class="mt-4 text-base font-semibold text-slate-900">
+          {{ i18n.t('brands.noResult.title') }}
+        </h2>
+        <p class="mt-1 max-w-sm text-sm text-slate-500">{{ i18n.t('brands.empty') }}</p>
+        <button type="button" class="btn-secondary mt-5 cursor-pointer" (click)="resetFilters()">
+          {{ i18n.t('brands.reset') }}
+        </button>
+      } @else {
+        <h2 class="mt-4 text-base font-semibold text-slate-900">
+          {{ i18n.t('brands.empty.title') }}
+        </h2>
+        <p class="mt-1 max-w-sm text-sm text-slate-500">{{ i18n.t('brands.empty.hint') }}</p>
+        <button type="button" class="btn-primary mt-5 cursor-pointer" (click)="openCreate()">
+          {{ i18n.t('brands.new') }}
+        </button>
+      }
+    </div>
+  } @else if (view() === 'table') {
+    <!-- Vue tableau : en-tête et totaux épinglés, seules les lignes défilent -->
+    <div class="card overflow-hidden">
+      <div class="max-h-[70vh] overflow-auto overscroll-contain">
+        <table class="w-full min-w-[64rem] border-separate border-spacing-0">
+          <thead>
+            <tr>
+              <th class="th-cell th-sticky" scope="col" [attr.aria-sort]="ariaSort('name')">
+                <ng-container
+                  *ngTemplateOutlet="
+                    sortButton;
+                    context: { key: 'name', label: i18n.t('brands.col.brand') }
+                  "
+                />
+              </th>
+              <th class="th-cell th-sticky" scope="col">{{ i18n.t('brands.col.contact') }}</th>
+              <th class="th-cell th-sticky" scope="col" [attr.aria-sort]="ariaSort('reliability')">
+                <ng-container
+                  *ngTemplateOutlet="
+                    sortButton;
+                    context: { key: 'reliability', label: i18n.t('brands.col.reliability') }
+                  "
+                />
+              </th>
+              <th class="th-cell th-sticky text-right" scope="col">
+                {{ i18n.t('brands.col.invoices') }}
+              </th>
+              <th
+                class="th-cell th-sticky text-right"
+                scope="col"
+                [attr.aria-sort]="ariaSort('invoiced')"
+              >
+                <ng-container
+                  *ngTemplateOutlet="
+                    sortButton;
+                    context: { key: 'invoiced', label: i18n.t('brands.col.invoiced') }
+                  "
+                />
+              </th>
+              <th
+                class="th-cell th-sticky text-right"
+                scope="col"
+                [attr.aria-sort]="ariaSort('outstanding')"
+              >
+                <ng-container
+                  *ngTemplateOutlet="
+                    sortButton;
+                    context: { key: 'outstanding', label: i18n.t('brands.col.outstanding') }
+                  "
+                />
+              </th>
+              <th class="th-cell th-sticky" scope="col" [attr.aria-sort]="ariaSort('activity')">
+                <ng-container
+                  *ngTemplateOutlet="
+                    sortButton;
+                    context: { key: 'activity', label: i18n.t('brands.col.lastActivity') }
+                  "
+                />
+              </th>
+              <th class="th-cell th-sticky text-right" scope="col">
+                <span class="sr-only">{{ i18n.t('brands.col.actions') }}</span>
+              </th>
+            </tr>
+          </thead>
+
+          <tbody>
+            @for (brand of filtered(); track brand.id) {
+              <tr class="row-in group transition-colors hover:bg-brand-50/50">
+                <td class="td-cell td-line relative">
+                  <span
+                    class="absolute inset-y-0 left-0 w-0.5 bg-brand-500 opacity-0 transition-opacity group-hover:opacity-100"
+                    aria-hidden="true"
+                  ></span>
+
+                  <button
+                    type="button"
+                    class="-m-1 flex w-full cursor-pointer items-center gap-3 rounded-xl p-1 text-left"
+                    (click)="openSheet(brand)"
+                  >
+                    <span
+                      class="grid size-10 shrink-0 place-items-center rounded-xl bg-gradient-to-br text-sm font-bold text-white"
+                      [class]="avatar(brand.name)"
+                      aria-hidden="true"
+                      >{{ initials(brand.name) }}</span
+                    >
+
+                    <span class="min-w-0 max-w-72">
+                      <span
+                        class="block truncate font-semibold text-slate-900 transition group-hover:text-brand-700"
+                      >
+                        @for (part of parts(brand.name); track $index) {
+                          <span
+                            [class]="part.match ? 'rounded-sm bg-amber-200/80 text-slate-900' : ''"
+                            >{{ part.text }}</span
+                          >
+                        }
+                      </span>
+
+                      <span class="mt-1 flex flex-wrap items-center gap-1.5">
+                        @if (brand.latePayer) {
+                          <app-status-badge status="OVERDUE" />
+                        }
+                        @if (brand.remindersPaused) {
+                          <span
+                            class="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600 ring-1 ring-slate-200"
+                          >
+                            <svg viewBox="0 0 24 24" class="size-3 fill-current" aria-hidden="true">
+                              <path d="M8 5h3v14H8V5zm5 0h3v14h-3V5z" />
+                            </svg>
+                            {{ i18n.t('brands.paused') }}
+                          </span>
+                        }
+                        <span class="num text-xs text-slate-500">
+                          {{ i18n.t('brands.terms', { days: brand.paymentTermsDays }) }}
+                        </span>
+                      </span>
+                    </span>
+                  </button>
+                </td>
+
+                <td class="td-cell td-line">
+                  <div class="max-w-56">
+                    <p class="truncate">
+                      @for (part of parts(brand.contact || '—'); track $index) {
+                        <span
+                          [class]="part.match ? 'rounded-sm bg-amber-200/80 text-slate-900' : ''"
+                          >{{ part.text }}</span
+                        >
+                      }
+                    </p>
+                    @if (brand.email) {
+                      <a
+                        class="block truncate text-xs text-slate-500 transition hover:text-brand-600"
+                        [href]="'mailto:' + brand.email"
+                      >
+                        @for (part of parts(brand.email); track $index) {
+                          <span
+                            [class]="part.match ? 'rounded-sm bg-amber-200/80 text-slate-900' : ''"
+                            >{{ part.text }}</span
+                          >
+                        }
+                      </a>
+                    }
+                  </div>
+                </td>
+
+                <td class="td-cell td-line">
+                  <div class="flex items-center gap-2">
+                    <span class="meter block w-16">
+                      <span
+                        class="meter-fill"
+                        [class]="reliabilityBar(brand.reliability)"
+                        [style.width.%]="brand.reliability"
+                      ></span>
+                    </span>
+                    <span
+                      class="num text-sm font-semibold"
+                      [class]="reliabilityText(brand.reliability)"
+                      >{{ brand.reliability }}</span
+                    >
+                  </div>
+                  <p class="mt-1 text-xs text-slate-500">{{ i18n.t(brand.reliabilityKey) }}</p>
+                </td>
+
+                <td class="td-cell td-line num text-right text-slate-600">
+                  {{ brand.invoiceCount }}
+                </td>
+                <td class="td-cell td-line num text-right">{{ brand.totalInvoiced | amount }}</td>
+                <td class="td-cell td-line num text-right font-semibold">
+                  <span [class]="brand.outstanding > 0 ? 'text-rose-600' : 'text-slate-500'">
+                    {{ brand.outstanding | amount }}
+                  </span>
+                  @if (brand.outstanding > 0 && brand.totalInvoiced > 0) {
+                    <!-- Part du facturé encore ouverte : le montant seul ne dit pas le poids -->
+                    <span class="meter mt-1.5 ml-auto block w-16">
+                      <span
+                        class="meter-fill bg-rose-400"
+                        [style.width.%]="(brand.outstanding / brand.totalInvoiced) * 100"
+                      ></span>
                     </span>
                   }
-                </div>
+                </td>
+                <td class="td-cell td-line whitespace-nowrap text-slate-500">
+                  {{ brand.lastActivity | localDate }}
+                </td>
+
+                <td class="td-cell td-line">
+                  <div
+                    class="flex items-center justify-end gap-0.5 transition-opacity lg:opacity-0 lg:group-hover:opacity-100 lg:group-focus-within:opacity-100"
+                  >
+                    <app-icon-button
+                      icon="view"
+                      [label]="i18n.t('preview.open')"
+                      (action)="openSheet(brand)"
+                    />
+                    <app-icon-button
+                      icon="edit"
+                      tone="brand"
+                      [label]="i18n.t('common.edit')"
+                      (action)="openEdit(brand)"
+                    />
+                    <app-icon-button
+                      [icon]="brand.remindersPaused ? 'resume' : 'pause'"
+                      [label]="
+                        brand.remindersPaused ? i18n.t('brands.resume') : i18n.t('brands.pause')
+                      "
+                      (action)="togglePause(brand)"
+                    />
+                    <app-icon-button
+                      icon="delete"
+                      tone="danger"
+                      [label]="i18n.t('common.delete')"
+                      (action)="remove(brand)"
+                    />
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+
+          <!-- Totaux de la sélection courante, épinglés sous les lignes -->
+          <tfoot>
+            <tr>
+              <th class="td-cell tf-sticky text-left font-semibold text-slate-900" scope="row">
+                {{ i18n.t('brands.total') }}
+              </th>
+              <td class="td-cell tf-sticky"></td>
+              <td class="td-cell tf-sticky"></td>
+              <td class="td-cell tf-sticky num text-right font-semibold text-slate-900">
+                {{ visibleTotals().invoices }}
               </td>
-              <td class="td-cell">
-                <p>{{ brand.contact || '—' }}</p>
-                <p class="text-xs text-slate-500">{{ brand.email }}</p>
+              <td class="td-cell tf-sticky num text-right font-semibold text-slate-900">
+                {{ visibleTotals().invoiced | amount }}
               </td>
-              <td class="td-cell num text-right">{{ brand.invoiceCount }}</td>
-              <td class="td-cell num text-right">{{ brand.totalInvoiced | amount }}</td>
-              <td
-                class="td-cell num text-right font-semibold"
+              <td class="td-cell tf-sticky num text-right font-semibold text-rose-600">
+                {{ visibleTotals().outstanding | amount }}
+              </td>
+              <td class="td-cell tf-sticky"></td>
+              <td class="td-cell tf-sticky"></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+
+    <!-- En-tête triable, partagé par toutes les colonnes qui le sont -->
+    <ng-template #sortButton let-key="key" let-label="label">
+      <button
+        type="button"
+        class="group/sort -my-1 inline-flex cursor-pointer items-center gap-1.5 py-1 uppercase transition hover:text-slate-900"
+        (click)="toggleSort(key)"
+      >
+        {{ label }}
+        <svg
+          viewBox="0 0 24 24"
+          class="size-3.5 fill-current transition"
+          [class]="
+            sortKey() === key
+              ? sortDirection() === 'asc'
+                ? 'text-brand-600'
+                : 'rotate-180 text-brand-600'
+              : 'text-slate-300 group-hover/sort:text-slate-500'
+          "
+          aria-hidden="true"
+        >
+          <path d="M12 5l5 6h-3v8h-4v-8H7l5-6z" />
+        </svg>
+      </button>
+    </ng-template>
+  } @else {
+    <!-- Vue cartes : lecture confortable sur petit écran et en revue de portefeuille -->
+    <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+      @for (brand of filtered(); track brand.id) {
+        <article class="card card-interactive row-in group flex flex-col p-4">
+          <div class="flex items-start gap-3">
+            <span
+              class="grid size-11 shrink-0 place-items-center rounded-xl bg-gradient-to-br text-sm font-bold text-white"
+              [class]="avatar(brand.name)"
+              aria-hidden="true"
+              >{{ initials(brand.name) }}</span
+            >
+
+            <div class="min-w-0 flex-1">
+              <button
+                type="button"
+                class="block w-full cursor-pointer truncate text-left font-semibold text-slate-900 transition hover:text-brand-600"
+                (click)="openSheet(brand)"
+              >
+                @for (part of parts(brand.name); track $index) {
+                  <span [class]="part.match ? 'rounded-sm bg-amber-200/80 text-slate-900' : ''">{{
+                    part.text
+                  }}</span>
+                }
+              </button>
+              <p class="truncate text-xs text-slate-500">
+                {{ brand.contact || brand.email || '—' }}
+              </p>
+            </div>
+
+            <span
+              class="num shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold ring-1"
+              [class]="reliabilityChip(brand.reliability)"
+              [title]="i18n.t('brands.sheet.reliability')"
+            >
+              {{ brand.reliability }}<span class="opacity-60">/100</span>
+            </span>
+          </div>
+
+          @if (brand.latePayer || brand.remindersPaused) {
+            <div class="mt-3 flex flex-wrap gap-1.5">
+              @if (brand.latePayer) {
+                <app-status-badge status="OVERDUE" />
+              }
+              @if (brand.remindersPaused) {
+                <span
+                  class="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600 ring-1 ring-slate-200"
+                  >{{ i18n.t('brands.paused') }}</span
+                >
+              }
+            </div>
+          }
+
+          <dl class="mt-4 grid grid-cols-2 gap-3">
+            <div class="rounded-xl bg-slate-50 p-3">
+              <dt class="stat-label">{{ i18n.t('brands.col.invoiced') }}</dt>
+              <dd class="num mt-1 text-sm font-semibold text-slate-900">
+                {{ brand.totalInvoiced | amount }}
+              </dd>
+            </div>
+            <div class="rounded-xl bg-slate-50 p-3">
+              <dt class="stat-label">{{ i18n.t('brands.col.outstanding') }}</dt>
+              <dd
+                class="num mt-1 text-sm font-semibold"
                 [class]="brand.outstanding > 0 ? 'text-rose-600' : 'text-slate-500'"
               >
                 {{ brand.outstanding | amount }}
-              </td>
-              <td class="td-cell text-slate-500">{{ brand.lastActivity | localDate }}</td>
-              <td class="td-cell">
-                <div class="flex items-center justify-end gap-0.5">
-                  <app-icon-button
-                    icon="view"
-                    [label]="i18n.t('preview.open')"
-                    (action)="openSheet(brand)"
-                  />
-                  <app-icon-button
-                    icon="edit"
-                    tone="brand"
-                    [label]="i18n.t('common.edit')"
-                    (action)="openEdit(brand)"
-                  />
-                  <app-icon-button
-                    [icon]="brand.remindersPaused ? 'resume' : 'pause'"
-                    [label]="brand.remindersPaused ? i18n.t('brands.resume') : i18n.t('brands.pause')"
-                    (action)="togglePause(brand)"
-                  />
-                  <app-icon-button
-                    icon="delete"
-                    tone="danger"
-                    [label]="i18n.t('common.delete')"
-                    (action)="remove(brand)"
-                  />
-                </div>
-              </td>
-            </tr>
-          } @empty {
-            <tr>
-              <td class="td-cell text-slate-500" colspan="7">{{ i18n.t('brands.empty') }}</td>
-            </tr>
-          }
-        </tbody>
-      </table>
+              </dd>
+            </div>
+          </dl>
+
+          <div class="mt-4 flex items-center justify-between gap-2 border-t border-slate-100 pt-3">
+            <span class="text-xs text-slate-500">{{ brand.lastActivity | localDate }}</span>
+            <div class="flex items-center gap-0.5">
+              <app-icon-button
+                icon="view"
+                [label]="i18n.t('preview.open')"
+                (action)="openSheet(brand)"
+              />
+              <app-icon-button
+                icon="edit"
+                tone="brand"
+                [label]="i18n.t('common.edit')"
+                (action)="openEdit(brand)"
+              />
+              <app-icon-button
+                [icon]="brand.remindersPaused ? 'resume' : 'pause'"
+                [label]="brand.remindersPaused ? i18n.t('brands.resume') : i18n.t('brands.pause')"
+                (action)="togglePause(brand)"
+              />
+              <app-icon-button
+                icon="delete"
+                tone="danger"
+                [label]="i18n.t('common.delete')"
+                (action)="remove(brand)"
+              />
+            </div>
+          </div>
+        </article>
+      }
     </div>
-  </div>
+  }
 </div>
 
 <!-- Formulaire de création / modification -->
@@ -134,52 +549,107 @@
     [subtitle]="i18n.t('brands.form.subtitle')"
     (closed)="close()"
   >
-    <form class="space-y-5" (ngSubmit)="save()">
-      <div>
-        <label class="field-label" for="name">{{ i18n.t('brands.form.name') }}</label>
-        <input id="name" name="name" class="field" placeholder="Nike" [(ngModel)]="form.name" required />
-      </div>
+    <form class="space-y-6" novalidate #brandForm="ngForm" (ngSubmit)="brandForm.valid && save()">
+      <section class="space-y-4">
+        <h3 class="field-label mb-0 text-slate-500">
+          {{ i18n.t('brands.form.section.identity') }}
+        </h3>
 
-      <div class="grid gap-4 sm:grid-cols-2">
         <div>
-          <label class="field-label" for="contact">{{ i18n.t('brands.form.contact') }}</label>
-          <input id="contact" name="contact" class="field" [(ngModel)]="form.contact" />
+          <label class="field-label" for="name">{{ i18n.t('brands.form.name') }}</label>
+          <input
+            id="name"
+            name="name"
+            class="field"
+            placeholder="Nike"
+            [(ngModel)]="form.name"
+            required
+          />
+          <p class="field-error">{{ i18n.t('form.required') }}</p>
         </div>
+
+        <div class="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label class="field-label" for="contact">{{ i18n.t('brands.form.contact') }}</label>
+            <input id="contact" name="contact" class="field" [(ngModel)]="form.contact" />
+          </div>
+          <div>
+            <label class="field-label" for="email">{{ i18n.t('brands.form.email') }}</label>
+            <input id="email" name="email" type="email" class="field" [(ngModel)]="form.email" />
+            <p class="field-error">{{ i18n.t('form.email') }}</p>
+          </div>
+        </div>
+
+        <div class="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label class="field-label" for="phone">{{ i18n.t('brands.form.phone') }}</label>
+            <input id="phone" name="phone" class="field" [(ngModel)]="form.phone" />
+          </div>
+          <div>
+            <label class="field-label" for="address">{{ i18n.t('brands.form.address') }}</label>
+            <input id="address" name="address" class="field" [(ngModel)]="form.address" />
+          </div>
+        </div>
+      </section>
+
+      <section class="space-y-4 border-t border-slate-100 pt-5">
+        <h3 class="field-label mb-0 text-slate-500">{{ i18n.t('brands.form.section.billing') }}</h3>
+
+        <div class="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label class="field-label" for="terms">{{ i18n.t('brands.form.terms') }}</label>
+            <input
+              id="terms"
+              name="terms"
+              type="number"
+              min="0"
+              class="field"
+              [(ngModel)]="form.paymentTermsDays"
+            />
+            <p class="field-hint">{{ i18n.t('brands.form.termsHint') }}</p>
+          </div>
+          <div>
+            <label class="field-label" for="countryCode">{{ i18n.t('brands.form.country') }}</label>
+            <input
+              id="countryCode"
+              name="countryCode"
+              class="field uppercase"
+              maxlength="2"
+              placeholder="FR"
+              [(ngModel)]="form.countryCode"
+            />
+            <p class="field-hint">{{ i18n.t('brands.form.countryHint') }}</p>
+          </div>
+        </div>
+
         <div>
-          <label class="field-label" for="email">{{ i18n.t('brands.form.email') }}</label>
-          <input id="email" name="email" type="email" class="field" [(ngModel)]="form.email" />
+          <label class="field-label" for="notes">{{ i18n.t('brands.form.notes') }}</label>
+          <textarea
+            id="notes"
+            name="notes"
+            rows="2"
+            class="field"
+            [(ngModel)]="form.notes"
+          ></textarea>
         </div>
-      </div>
+      </section>
 
-      <div class="grid gap-4 sm:grid-cols-2">
-        <div>
-          <label class="field-label" for="phone">{{ i18n.t('brands.form.phone') }}</label>
-          <input id="phone" name="phone" class="field" [(ngModel)]="form.phone" />
-        </div>
-        <div>
-          <label class="field-label" for="address">{{ i18n.t('brands.form.address') }}</label>
-          <input id="address" name="address" class="field" [(ngModel)]="form.address" />
-        </div>
-      </div>
-
-      <div>
-        <label class="field-label" for="terms">{{ i18n.t('brands.form.terms') }}</label>
-        <input id="terms" name="terms" type="number" min="0" class="field" [(ngModel)]="form.paymentTermsDays" />
-        <p class="mt-1 text-xs text-slate-500">{{ i18n.t('brands.form.termsHint') }}</p>
-      </div>
-
-      <div>
-        <label class="field-label" for="notes">{{ i18n.t('brands.form.notes') }}</label>
-        <textarea id="notes" name="notes" rows="2" class="field" [(ngModel)]="form.notes"></textarea>
-      </div>
-
-      @if (error()) {
-        <p class="rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700 ring-1 ring-rose-200" role="alert">{{ error() }}</p>
+      @if (brandForm.submitted && brandForm.invalid) {
+        <p class="alert-error" role="alert">{{ i18n.t('form.incomplete') }}</p>
       }
 
-      <div class="flex justify-end gap-3">
-        <button type="button" class="btn-secondary" (click)="close()">{{ i18n.t('common.cancel') }}</button>
-        <button type="submit" class="btn-primary">{{ i18n.t('common.save') }}</button>
+      @if (error()) {
+        <p class="alert-error" role="alert">{{ error() }}</p>
+      }
+
+      <div class="flex items-center justify-end gap-3 border-t border-slate-100 pt-5">
+        <p class="field-required-note mr-auto">{{ i18n.t('form.requiredNote') }}</p>
+        <button type="button" class="btn-secondary cursor-pointer" (click)="close()">
+          {{ i18n.t('common.cancel') }}
+        </button>
+        <button type="submit" class="btn-primary cursor-pointer">
+          {{ i18n.t('common.save') }}
+        </button>
       </div>
     </form>
   </app-modal>
@@ -189,38 +659,158 @@
 @if (modal() === 'sheet' && selected(); as brand) {
   <app-modal
     [title]="brand.name"
-    [subtitle]="brand.contact + ' · ' + brand.email"
+    [subtitle]="sheetSubtitle(brand)"
     [wide]="true"
     (closed)="close()"
   >
     <div class="space-y-6">
+      <!-- Fiabilité : la jauge résume d'un coup d'œil la tenue des délais -->
+      <section
+        class="flex flex-wrap items-center gap-6 rounded-2xl bg-slate-50 p-5 ring-1 ring-slate-100"
+      >
+        <div class="relative shrink-0">
+          <svg viewBox="0 0 42 42" class="size-24 -rotate-90" aria-hidden="true">
+            <circle
+              cx="21"
+              cy="21"
+              r="15.9155"
+              fill="none"
+              stroke-width="4"
+              class="stroke-slate-200"
+            />
+            <circle
+              cx="21"
+              cy="21"
+              r="15.9155"
+              fill="none"
+              stroke-width="4"
+              stroke-linecap="round"
+              stroke-dasharray="100"
+              pathLength="100"
+              class="gauge-arc"
+              [class]="reliabilityStroke(brand.reliability)"
+              [attr.stroke-dashoffset]="100 - brand.reliability"
+            />
+          </svg>
+          <span
+            class="absolute inset-0 grid place-items-center leading-none"
+            [class]="reliabilityText(brand.reliability)"
+          >
+            <span class="num text-xl font-semibold">{{ brand.reliability }}</span>
+            <span class="num mt-0.5 text-[0.625rem] font-medium opacity-70">/ 100</span>
+          </span>
+        </div>
+
+        <div class="min-w-0 flex-1">
+          <p class="stat-label font-semibold uppercase">{{ i18n.t('brands.sheet.reliability') }}</p>
+          <p class="mt-1 text-lg font-semibold text-slate-900">
+            {{ i18n.t(brand.reliabilityKey) }}
+          </p>
+          <p class="mt-1 text-sm text-slate-500">
+            {{ i18n.t('reliability.onTime', { value: brand.onTimeRate }) }} ·
+            {{ i18n.t('reliability.delay', { value: brand.averageDelay }) }}
+          </p>
+          <p class="mt-2 text-xs text-slate-500">
+            {{ i18n.t('brands.sheet.terms') }} :
+            {{ i18n.t('brands.terms', { days: brand.paymentTermsDays }) }}
+          </p>
+        </div>
+      </section>
+
       <dl class="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <div class="rounded-xl bg-slate-50 p-3">
-          <dt class="text-xs text-slate-500">{{ i18n.t('brands.sheet.invoiced') }}</dt>
+        <div class="rounded-xl bg-slate-50 p-3 ring-1 ring-slate-100">
+          <dt class="stat-label">{{ i18n.t('brands.sheet.invoiced') }}</dt>
           <dd class="num mt-1 font-semibold text-slate-900">{{ brand.totalInvoiced | amount }}</dd>
         </div>
-        <div class="rounded-xl bg-slate-50 p-3">
-          <dt class="text-xs text-slate-500">{{ i18n.t('brands.sheet.paid') }}</dt>
+        <div class="rounded-xl bg-emerald-50/60 p-3 ring-1 ring-emerald-100">
+          <dt class="stat-label">{{ i18n.t('brands.sheet.paid') }}</dt>
           <dd class="num mt-1 font-semibold text-emerald-600">{{ brand.totalPaid | amount }}</dd>
         </div>
-        <div class="rounded-xl bg-slate-50 p-3">
-          <dt class="text-xs text-slate-500">{{ i18n.t('brands.col.outstanding') }}</dt>
-          <dd class="num mt-1 font-semibold text-rose-600">{{ brand.outstanding | amount }}</dd>
+        <div
+          class="rounded-xl p-3 ring-1"
+          [class]="
+            brand.outstanding > 0 ? 'bg-rose-50/60 ring-rose-100' : 'bg-slate-50 ring-slate-100'
+          "
+        >
+          <dt class="stat-label">{{ i18n.t('brands.col.outstanding') }}</dt>
+          <dd
+            class="num mt-1 font-semibold"
+            [class]="brand.outstanding > 0 ? 'text-rose-600' : 'text-slate-500'"
+          >
+            {{ brand.outstanding | amount }}
+          </dd>
         </div>
-        <div class="rounded-xl bg-slate-50 p-3">
-          <dt class="text-xs text-slate-500">{{ i18n.t('brands.sheet.avgDelay') }}</dt>
+        <div class="rounded-xl bg-slate-50 p-3 ring-1 ring-slate-100">
+          <dt class="stat-label">{{ i18n.t('brands.sheet.avgDelay') }}</dt>
           <dd class="num mt-1 font-semibold text-slate-900">
             {{ brand.averageDelay }} {{ i18n.t('common.days') }}
           </dd>
         </div>
       </dl>
 
+      <!-- Coordonnées : tout ce qui sert à relancer sans quitter la fiche -->
+      @if (brand.email || brand.phone || brand.address) {
+        <section>
+          <h3 class="card-title">{{ i18n.t('brands.sheet.contact') }}</h3>
+          <ul class="mt-2 grid gap-2 sm:grid-cols-2">
+            @if (brand.email) {
+              <li>
+                <a
+                  class="flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-50 hover:text-brand-600"
+                  [href]="'mailto:' + brand.email"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    class="size-4 shrink-0 fill-slate-400"
+                    aria-hidden="true"
+                  >
+                    <path d="M3 5h18v14H3V5zm2 2 7 4.5L19 7H5zm0 2.3V17h14V9.3l-7 4.4-7-4.4z" />
+                  </svg>
+                  <span class="truncate">{{ brand.email }}</span>
+                </a>
+              </li>
+            }
+            @if (brand.phone) {
+              <li>
+                <a
+                  class="flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-50 hover:text-brand-600"
+                  [href]="'tel:' + brand.phone"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    class="size-4 shrink-0 fill-slate-400"
+                    aria-hidden="true"
+                  >
+                    <path
+                      d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.24 11.4 11.4 0 0 0 3.6.58 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1 11.4 11.4 0 0 0 .6 3.6 1 1 0 0 1-.3 1l-2.2 2.2z"
+                    />
+                  </svg>
+                  <span class="truncate">{{ brand.phone }}</span>
+                </a>
+              </li>
+            }
+            @if (brand.address) {
+              <li
+                class="flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm text-slate-700 ring-1 ring-slate-200 sm:col-span-2"
+              >
+                <svg viewBox="0 0 24 24" class="size-4 shrink-0 fill-slate-400" aria-hidden="true">
+                  <path
+                    d="M12 2a7 7 0 0 0-7 7c0 5.2 7 13 7 13s7-7.8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z"
+                  />
+                </svg>
+                <span class="truncate">{{ brand.address }}</span>
+              </li>
+            }
+          </ul>
+        </section>
+      }
+
       <section>
-        <h3 class="text-sm font-semibold text-slate-900">{{ i18n.vocab('projects') }}</h3>
+        <h3 class="card-title">{{ i18n.vocab('projects') }}</h3>
         <ul class="mt-2 divide-y divide-slate-100">
           @for (campaign of campaignsOf(brand.id); track campaign.id) {
-            <li class="flex items-center justify-between py-2 text-sm">
-              <span class="text-slate-700">{{ campaign.name }}</span>
+            <li class="flex items-center justify-between gap-3 py-2 text-sm">
+              <span class="truncate text-slate-700">{{ campaign.name }}</span>
               <app-status-badge [status]="campaign.status" />
             </li>
           } @empty {
@@ -230,12 +820,14 @@
       </section>
 
       <section>
-        <h3 class="text-sm font-semibold text-slate-900">{{ i18n.vocab('invoices') }}</h3>
+        <h3 class="card-title">{{ i18n.vocab('invoices') }}</h3>
         <ul class="mt-2 divide-y divide-slate-100">
           @for (invoice of invoicesOf(brand.id); track invoice.id) {
             <li class="flex items-center justify-between gap-3 py-2 text-sm">
-              <span class="text-slate-700">{{ invoice.number || i18n.t('common.draft') }}</span>
-              <span class="num text-slate-900">{{ invoice.totalInclVat | amount }}</span>
+              <span class="truncate text-slate-700">
+                {{ invoice.number || i18n.t('common.draft') }}
+              </span>
+              <span class="num ml-auto text-slate-900">{{ invoice.totalInclVat | amount }}</span>
               <app-status-badge [status]="invoice.status" />
             </li>
           } @empty {
@@ -245,8 +837,17 @@
       </section>
 
       @if (brand.notes) {
-        <p class="rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-800 ring-1 ring-amber-200">{{ brand.notes }}</p>
+        <p class="alert-warning">{{ brand.notes }}</p>
       }
+
+      <div class="flex flex-wrap justify-end gap-3 border-t border-slate-100 pt-5">
+        <button type="button" class="btn-secondary cursor-pointer" (click)="togglePause(brand)">
+          {{ brand.remindersPaused ? i18n.t('brands.resume') : i18n.t('brands.pause') }}
+        </button>
+        <button type="button" class="btn-primary cursor-pointer" (click)="openEdit(brand)">
+          {{ i18n.t('common.edit') }}
+        </button>
+      </div>
     </div>
   </app-modal>
 }

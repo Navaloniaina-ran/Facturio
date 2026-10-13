@@ -33,14 +33,15 @@ describe('CreatorShellComponent', () => {
     trigger.click();
   }
 
-  it('lists the ten modules of the creator space', async () => {
+  it('lists the eleven modules of the creator space', async () => {
     const fixture = await create();
     const paths = [...fixture.nativeElement.querySelectorAll('nav a')].map((link) =>
       (link as HTMLAnchorElement).getAttribute('href'),
     );
 
-    expect(paths.length).toBe(10);
+    expect(paths.length).toBe(11);
     expect(paths).toContain('/collaborations');
+    expect(paths).toContain('/modeles');
     expect(paths).toContain('/parametres');
   });
 
@@ -126,5 +127,28 @@ describe('CreatorShellComponent', () => {
       ?.click();
 
     expect(auth.isSignedIn()).toBe(false);
+  });
+
+  // La navigation est le premier endroit où les deux profils divergent.
+  it('serves the PME navigation to a BUSINESS workspace', async () => {
+    TestBed.inject(AuthService).signIn('pme@facturio.example', 'demonstration', 'BUSINESS');
+
+    const fixture = await create();
+    const nav = fixture.nativeElement.querySelector('nav');
+    const text = nav.textContent as string;
+    const paths = [...nav.querySelectorAll('a')].map((link) =>
+      (link as HTMLAnchorElement).getAttribute('href'),
+    );
+
+    expect(paths).toContain('/clients');
+    expect(paths).toContain('/fournisseurs');
+    expect(paths).not.toContain('/marques');
+    expect(paths).not.toContain('/campagnes');
+    expect(paths).not.toContain('/collaborations');
+
+    // Le vocabulaire suit le profil : « Devis » et non « Propositions ».
+    expect(text).toContain('Fournisseurs');
+    expect(text).toContain('Devis');
+    expect(text).not.toContain('Propositions');
   });
 });

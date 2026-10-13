@@ -1,7 +1,15 @@
 import { TestBed } from '@angular/core/testing';
+import { Observable } from 'rxjs';
 import { I18nService } from '../../core/i18n/i18n.service';
 import { WorkspaceStore } from '../../core/workspace-store.service';
 import { BrandService, EMPTY_BRAND } from './brand.service';
+
+/** Les actions passent par l'API : ici elles répondent tout de suite. */
+function run<T>(source: Observable<T>): T {
+  let received!: T;
+  source.subscribe((value) => (received = value));
+  return received;
+}
 
 describe('BrandService', () => {
   let service: BrandService;
@@ -42,24 +50,28 @@ describe('BrandService', () => {
   });
 
   it('refuses a brand without a name', () => {
-    expect(service.create({ ...EMPTY_BRAND }).errorKey).toBe('brand.error.name');
+    expect(run(service.create({ ...EMPTY_BRAND })).errorKey).toBe('brand.error.name');
   });
 
   it('refuses a malformed email', () => {
-    expect(service.create({ ...EMPTY_BRAND, name: 'Adidas', email: 'contact' }).ok).toBe(false);
+    expect(run(service.create({ ...EMPTY_BRAND, name: 'Adidas', email: 'contact' })).ok).toBe(
+      false,
+    );
   });
 
   it('adds a valid brand', () => {
     const before = store.brands().length;
 
-    expect(service.create({ ...EMPTY_BRAND, name: 'Adidas', email: 'contact@adidas.example' }).ok).toBe(true);
+    expect(
+      run(service.create({ ...EMPTY_BRAND, name: 'Adidas', email: 'contact@adidas.example' })).ok,
+    ).toBe(true);
     expect(store.brands().length).toBe(before + 1);
   });
 
   it('blocks creation beyond the plan quota', () => {
     store.creator.update((creator) => ({ ...creator, plan: 'FREE' }));
 
-    const result = service.create({ ...EMPTY_BRAND, name: 'Adidas' });
+    const result = run(service.create({ ...EMPTY_BRAND, name: 'Adidas' }));
 
     expect(result.ok).toBe(false);
     expect(result.errorKey).toBe('quota.limit');
@@ -69,7 +81,7 @@ describe('BrandService', () => {
   it('protects a brand that carries invoices', () => {
     const nike = service.list().find((b) => b.name === 'Nike')!;
 
-    expect(service.remove(nike.id).errorKey).toBe('brand.error.hasInvoices');
+    expect(run(service.remove(nike.id)).errorKey).toBe('brand.error.hasInvoices');
   });
 
   it('exports the portfolio as CSV', () => {

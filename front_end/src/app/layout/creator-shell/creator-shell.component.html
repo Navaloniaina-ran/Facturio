@@ -18,10 +18,13 @@
       <span
         class="grid size-10 place-items-center rounded-xl bg-gradient-to-br from-brand-400 to-brand-700 text-base font-bold text-white"
         aria-hidden="true"
-      >F</span>
+        >F</span
+      >
       <div>
         <p class="text-sm font-semibold text-white">{{ i18n.t('app.name') }}</p>
-        <p class="text-xs text-slate-400">{{ i18n.t('app.space') }}</p>
+        <p class="text-xs text-slate-400">
+          {{ i18n.t(isBusiness() ? 'app.businessSpace' : 'app.space') }}
+        </p>
       </div>
     </div>
 
@@ -33,13 +36,19 @@
           class="group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-400 transition hover:bg-white/5 hover:text-white"
           (click)="closeNav()"
         >
-          <svg viewBox="0 0 24 24" class="size-5 shrink-0 fill-current opacity-80" aria-hidden="true">
+          <svg
+            viewBox="0 0 24 24"
+            class="size-5 shrink-0 fill-current opacity-80"
+            aria-hidden="true"
+          >
             <path [attr.d]="entry.icon" />
           </svg>
           <span class="flex-1">{{ entry.label }}</span>
 
           @if (entry.badge > 0) {
-            <span class="rounded-full bg-rose-500/20 px-2 py-0.5 text-xs font-semibold text-rose-300">
+            <span
+              class="rounded-full bg-rose-500/20 px-2 py-0.5 text-xs font-semibold text-rose-300"
+            >
               {{ entry.badge }}
             </span>
           }
@@ -53,8 +62,10 @@
       class="m-4 flex shrink-0 items-center justify-between gap-3 rounded-xl bg-white/5 px-3 py-2.5 text-xs text-slate-400 transition hover:bg-white/10 hover:text-white"
       (click)="closeNav()"
     >
-      {{ i18n.t('shell.plan', { plan: creator().plan }) }}
-      <span aria-hidden="true">→</span>
+      {{ i18n.t('shell.plan', { plan: plan() }) }}
+      <svg viewBox="0 0 24 24" class="size-4 shrink-0 fill-current" aria-hidden="true">
+        <path [attr.d]="icons.arrowRight" />
+      </svg>
     </a>
   </aside>
 
@@ -80,7 +91,9 @@
           <p class="truncate text-xs text-slate-500">{{ i18n.t('shell.subtitle') }}</p>
         </div>
 
-        <span class="hidden rounded-xl bg-white px-3 py-2 text-xs font-semibold text-slate-600 capitalize ring-1 ring-slate-200 sm:inline-block">
+        <span
+          class="hidden rounded-xl bg-white px-3 py-2 text-xs font-semibold text-slate-600 capitalize ring-1 ring-slate-200 sm:inline-block"
+        >
           {{ period() }}
         </span>
 
@@ -96,7 +109,9 @@
             <path d="M12 2a6 6 0 0 0-6 6v5l-2 3h16l-2-3V8a6 6 0 0 0-6-6zm-3 18h6a3 3 0 0 1-6 0z" />
           </svg>
           @if (notificationCount() > 0) {
-            <span class="absolute -top-1 -right-1 grid size-5 place-items-center rounded-full bg-rose-500 text-[10px] font-bold text-white">
+            <span
+              class="absolute -top-1 -right-1 grid size-5 place-items-center rounded-full bg-rose-500 text-[10px] font-bold text-white"
+            >
               {{ notificationCount() }}
             </span>
           }
@@ -111,11 +126,13 @@
             aria-haspopup="menu"
             (click)="toggleUserMenu()"
           >
-            <span class="grid size-8 place-items-center rounded-lg bg-brand-600 text-xs font-bold text-white">
+            <span
+              class="grid size-8 place-items-center rounded-lg bg-brand-600 text-xs font-bold text-white"
+            >
               {{ initials() }}
             </span>
             <span class="hidden max-w-32 truncate text-sm font-medium text-slate-800 sm:block">
-              {{ creator().name }}
+              {{ displayName() }}
             </span>
             <svg viewBox="0 0 24 24" class="size-4 fill-slate-400" aria-hidden="true">
               <path d="M12 15.5 5.5 9l1.4-1.4L12 12.7l5.1-5.1L18.5 9z" />
@@ -137,8 +154,8 @@
               role="menu"
             >
               <div class="border-b border-slate-100 px-4 py-3">
-                <p class="truncate text-sm font-semibold text-slate-900">{{ creator().name }}</p>
-                <p class="truncate text-xs text-slate-500">{{ creator().email }}</p>
+                <p class="truncate text-sm font-semibold text-slate-900">{{ displayName() }}</p>
+                <p class="truncate text-xs text-slate-500">{{ displayEmail() }}</p>
               </div>
 
               <a
@@ -148,8 +165,10 @@
                 (click)="closeUserMenu()"
               >
                 <span>{{ i18n.t('shell.mySubscription') }}</span>
-                <span class="rounded-full bg-brand-50 px-2 py-0.5 text-xs font-semibold text-brand-700">
-                  {{ creator().plan }}
+                <span
+                  class="rounded-full bg-brand-50 px-2 py-0.5 text-xs font-semibold text-brand-700"
+                >
+                  {{ plan() }}
                 </span>
               </a>
 
@@ -181,11 +200,14 @@
       <router-outlet />
 
       <footer class="mt-8 text-xs text-slate-400">
-        {{ i18n.t('shell.footer', { currency: creator().currency }) }}
+        {{ i18n.t('shell.footer', { currency: displayCurrency() }) }}
         @if (remainingTasks() > 0) {
           · {{ i18n.t('shell.onboardingLeft', { count: remainingTasks() }) }}
         }
       </footer>
     </main>
   </div>
+
+  <!-- Notifications, montées une seule fois -->
+  <app-toasts />
 </div>

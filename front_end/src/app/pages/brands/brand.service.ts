@@ -1,4 +1,8 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import { Injectable, computed, inject } from '@angular/core';
+import { Observable, catchError, map, of, tap } from 'rxjs';
+import { apiErrorResult } from '../../core/api/api-error';
+import { CreatorApiService } from '../../core/api/creator-api.service';
 import { averagePaymentDelay, round } from '../../core/calculations';
 import { I18nService } from '../../core/i18n/i18n.service';
 import { ActionResult, Brand } from '../../core/models';
@@ -31,6 +35,7 @@ export const EMPTY_BRAND: BrandDraft = {
   email: '',
   phone: '',
   address: '',
+  countryCode: 'FR',
   paymentTermsDays: 30,
   notes: '',
 };
@@ -39,6 +44,7 @@ export const EMPTY_BRAND: BrandDraft = {
 export class BrandService {
   private readonly store = inject(WorkspaceStore);
   private readonly invoices = inject(InvoiceService);
+  private readonly api = inject(CreatorApiService);
   private readonly i18n = inject(I18nService);
 
   readonly list = computed<BrandView[]>(() => {
@@ -59,7 +65,11 @@ export class BrandService {
             .reduce((sum, i) => sum + i.outstanding, 0),
         ),
         averageDelay: averagePaymentDelay(raw, payments),
-        lastActivity: invoices.map((i) => i.issueDate).sort().at(-1) ?? null,
+        lastActivity:
+          invoices
+            .map((i) => i.issueDate)
+            .sort()
+            .at(-1) ?? null,
         latePayer: invoices.some((i) => i.status === 'OVERDUE'),
         ...this.reliabilityOf(brand, invoices, averagePaymentDelay(raw, payments)),
       };
@@ -114,45 +124,110 @@ export class BrandService {
     return this.list().find((brand) => brand.id === id);
   }
 
-  create(draft: BrandDraft): ActionResult {
+  create(draft: BrandDraft): Observable<ActionResult> {
+    const invalid = this.validate(draft);
+    if (invalid) {
+      return of(invalid);
+    }
+
+    const block = checkLimit(this.store.creator().plan, 'brands', this.store.brands().length);
+    if (block) {
+      return of({ ok: false, errorKey: block.errorKey, params: block.params });
+    }
+
+    if (!this.store.remote()) {
+      this.add({ ...draft, id: this.store.newId('b'), remindersPaused: false });
+      return of({ ok: true });
+    }
+
+    return this.api.createBrand(draft).pipe(
+      tap((brand) => this.add(brand)),
+      map(() => ({ ok: true }) as ActionResult),
+      catchError((error: HttpErrorResponse) => of(apiErrorResult(error))),
+    );
+  }
+
+  update(id: string, draft: BrandDraft): Observable<ActionResult> {
+    const invalid = this.validate(draft);
+    if (invalid) {
+      return of(invalid);
+    }
+
+    if (!this.store.remote()) {
+      this.replace(id, (brand) => ({ ...brand, ...draft }));
+      return of({ ok: true });
+    }
+
+    return this.api.updateBrand(id, draft).pipe(
+      tap((brand) => this.replace(id, () => brand)),
+      map(() => ({ ok: true }) as ActionResult),
+      catchError((error: HttpErrorResponse) => of(apiErrorResult(error))),
+    );
+  }
+
+  /** Une marque rattachée à une facture n'est jamais supprimée. */
+  remove(id: string): Observable<ActionResult> {
+    if (this.store.invoices().some((invoice) => invoice.brandId === id)) {
+      return of({ ok: false, errorKey: 'brand.error.hasInvoices' });
+    }
+
+    if (!this.store.remote()) {
+      this.drop(id);
+      return of({ ok: true });
+    }
+
+    return this.api.deleteBrand(id).pipe(
+      tap(() => this.drop(id)),
+      map(() => ({ ok: true }) as ActionResult),
+      // Le serveur seul connaît les documents déjà émis pour cette marque.
+      catchError((error: HttpErrorResponse) =>
+        of(
+          apiErrorResult(error, {
+            brand_has_documents: 'brand.error.hasInvoices',
+            brand_linked: 'brand.error.linked',
+          }),
+        ),
+      ),
+    );
+  }
+
+  /** Suspend ou reprend les relances automatiques de la marque. */
+  togglePause(id: string): Observable<ActionResult> {
+    if (!this.store.remote()) {
+      this.replace(id, (brand) => ({ ...brand, remindersPaused: !brand.remindersPaused }));
+      return of({ ok: true });
+    }
+
+    return this.api.toggleBrandReminders(id).pipe(
+      tap((brand) => this.replace(id, () => brand)),
+      map(() => ({ ok: true }) as ActionResult),
+      catchError((error: HttpErrorResponse) => of(apiErrorResult(error))),
+    );
+  }
+
+  private validate(draft: BrandDraft): ActionResult | null {
     if (!draft.name.trim()) {
       return { ok: false, errorKey: 'brand.error.name' };
     }
     if (draft.email && !draft.email.includes('@')) {
       return { ok: false, errorKey: 'brand.error.email' };
     }
+    return null;
+  }
 
-    const block = checkLimit(this.store.creator().plan, 'brands', this.store.brands().length);
-    if (block) {
-      return { ok: false, errorKey: block.errorKey, params: block.params };
-    }
-
-    const brand: Brand = { ...draft, id: this.store.newId('b'), remindersPaused: false };
+  private add(brand: Brand): void {
     this.store.brands.update((brands) => [...brands, brand]);
     this.store.log('BRAND', 'activity.brandAdded', { name: brand.name });
-
-    return { ok: true };
   }
 
-  update(id: string, draft: BrandDraft): ActionResult {
-    if (!draft.name.trim()) {
-      return { ok: false, errorKey: 'brand.error.name' };
-    }
-
+  private replace(id: string, change: (brand: Brand) => Brand): void {
     this.store.brands.update((brands) =>
-      brands.map((brand) => (brand.id === id ? { ...brand, ...draft } : brand)),
+      brands.map((brand) => (brand.id === id ? change(brand) : brand)),
     );
-    return { ok: true };
   }
 
-  /** Une marque rattachée à une facture n'est jamais supprimée. */
-  remove(id: string): ActionResult {
-    if (this.store.invoices().some((invoice) => invoice.brandId === id)) {
-      return { ok: false, errorKey: 'brand.error.hasInvoices' };
-    }
-
+  private drop(id: string): void {
     this.store.brands.update((brands) => brands.filter((brand) => brand.id !== id));
-    return { ok: true };
   }
 
   /** Export CSV du portefeuille de marques, en-têtes dans la langue courante. */

@@ -39,7 +39,9 @@ describe('BrandsComponent', () => {
 
   it('keeps only late payers when the filter is on', async () => {
     const fixture = await create();
-    const expected = TestBed.inject(BrandService).list().filter((b) => b.latePayer).length;
+    const expected = TestBed.inject(BrandService)
+      .list()
+      .filter((b) => b.latePayer).length;
 
     const button = [...fixture.nativeElement.querySelectorAll('button')].find((b) =>
       (b as HTMLButtonElement).textContent?.includes('Mauvais payeurs'),
