@@ -42,6 +42,7 @@ public class SettingsController {
   @PostMapping(value = "/logo", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
   ResponseEntity<ApiResponse<Map<String, String>>> uploadLogo(
       @RequestParam("file") MultipartFile file) throws IOException {
-    return ApiResponses.ok(Map.of("url", "/api/files/" + storage.storeLogo(file)));
+    return ApiResponses.ok(
+        Map.of("url", "/api/files/" + storage.storeLogo(file)), "Logo enregistre");
   }
 }

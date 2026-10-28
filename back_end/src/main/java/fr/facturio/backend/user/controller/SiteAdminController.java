@@ -25,7 +25,7 @@ public class SiteAdminController {
 
   @GetMapping
   ResponseEntity<ApiResponse<List<AdminUserResponse>>> list() {
-    return ApiResponses.ok(users.findAll().stream().map(this::response).toList());
+    return ApiResponses.ok(users.findAll().stream().map(this::response).toList(), "Liste des utilisateurs");
   }
 
   @PatchMapping("/{id}/role")

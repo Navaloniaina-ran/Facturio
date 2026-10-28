@@ -36,7 +36,20 @@ Les erreurs suivent la meme forme, avec le code metier dans `data.code` :
 { "status": 409, "message": "Cette campagne est rattachee a une collaboration", "data": { "code": "campaign_linked" } }
 ```
 
-Les telechargements de fichiers (PDF, XML, Factur-X, logo) restent des reponses
+Les erreurs levees hors controleur (securite, anti-CSRF, route inconnue, corps
+JSON illisible) gardent la meme forme :
+
+- `401` sans session : `{ "status": 401, "message": "Session requise", "data": { "code": "unauthenticated" } }`
+- `403` mutation sans `X-Requested-With: XMLHttpRequest` : `data.code` = `csrf_header_missing`
+- `404` route inconnue : `data.code` = `not_found`
+- `405` methode non supportee : `data.code` = `method_not_allowed`
+- `400` corps illisible : `data.code` = `malformed_body` ; champ invalide : `validation_error`
+
+Les messages de succes sont propres a chaque operation, par exemple
+`"Liste des clients"` pour `GET /api/business/customers`, `"Ressource creee"`
+pour un `201`, `"Ressource supprimee"` pour une suppression.
+
+Les telechargements de fichiers (PDF, XML, Factur-X) restent des reponses
 binaires et ne sont pas enveloppes.
 
 ## Routes livrees
@@ -46,6 +59,9 @@ binaires et ne sont pas enveloppes.
 - `POST /api/auth/signup`, `POST /api/auth/login`, `POST /api/auth/logout`
 - `GET /api/auth/session`, `PUT /api/auth/creator-profile`
 - `/oauth2/authorization/google`, `/facebook`, `/x`
+
+L'inscription et la connexion par email/mot de passe ne demandent aucune
+double authentification : `signup` et `login` renvoient directement le JWT.
 
 ### Espace createur
 

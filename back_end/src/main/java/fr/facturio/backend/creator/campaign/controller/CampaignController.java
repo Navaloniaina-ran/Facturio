@@ -20,7 +20,7 @@ public class CampaignController {
 
   @GetMapping
   ResponseEntity<ApiResponse<List<CampaignResponse>>> list() {
-    return ApiResponses.ok(service.list());
+    return ApiResponses.ok(service.list(), "Liste des campagnes");
   }
 
   @GetMapping("/{id}")

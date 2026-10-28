@@ -18,11 +18,11 @@ public class ReportController {
 
   @GetMapping("/revenue")
   ResponseEntity<ApiResponse<RevenueReportResponse>> revenue() {
-    return ApiResponses.ok(service.revenue());
+    return ApiResponses.ok(service.revenue(), "Chiffre d'affaires par mois");
   }
 
   @GetMapping("/summary")
   ResponseEntity<ApiResponse<ReportSummaryResponse>> summary() {
-    return ApiResponses.ok(service.summary());
+    return ApiResponses.ok(service.summary(), "Synthese des rapports");
   }
 }

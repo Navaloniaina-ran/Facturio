@@ -20,7 +20,7 @@ public class ReminderController {
 
   @GetMapping("/rules")
   ResponseEntity<ApiResponse<List<ReminderRuleResponse>>> rules() {
-    return ApiResponses.ok(service.rules());
+    return ApiResponses.ok(service.rules(), "Liste des regles de relance");
   }
 
   @PatchMapping("/rules/{id}")
@@ -31,7 +31,7 @@ public class ReminderController {
 
   @GetMapping("/invoice/{invoiceId}")
   ResponseEntity<ApiResponse<List<ReminderResponse>>> invoice(@PathVariable UUID invoiceId) {
-    return ApiResponses.ok(service.byInvoice(invoiceId));
+    return ApiResponses.ok(service.byInvoice(invoiceId), "Liste des relances de la facture");
   }
 
   @PostMapping

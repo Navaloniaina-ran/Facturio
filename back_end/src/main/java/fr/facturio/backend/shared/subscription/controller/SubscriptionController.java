@@ -36,6 +36,6 @@ public class SubscriptionController {
 
   @GetMapping("/invoices")
   ResponseEntity<ApiResponse<List<PlatformInvoiceResponse>>> invoices() {
-    return ApiResponses.ok(service.invoices());
+    return ApiResponses.ok(service.invoices(), "Liste des factures d'abonnement");
   }
 }

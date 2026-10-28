@@ -20,7 +20,7 @@ public class QuoteController {
 
   @GetMapping
   ResponseEntity<ApiResponse<List<BillingDocumentResponse>>> list() {
-    return ApiResponses.ok(service.list("QUOTE"));
+    return ApiResponses.ok(service.list("QUOTE"), "Liste des devis");
   }
 
   @GetMapping("/{id}")

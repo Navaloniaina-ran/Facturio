@@ -23,7 +23,7 @@ public class InvoiceController {
 
   @GetMapping
   ResponseEntity<ApiResponse<List<BillingDocumentResponse>>> list() {
-    return ApiResponses.ok(service.list("INVOICE"));
+    return ApiResponses.ok(service.list("INVOICE"), "Liste des factures");
   }
 
   @GetMapping("/{id}")

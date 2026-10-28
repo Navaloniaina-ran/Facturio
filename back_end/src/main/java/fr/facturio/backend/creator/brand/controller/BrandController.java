@@ -20,7 +20,7 @@ public class BrandController {
 
   @GetMapping
   ResponseEntity<ApiResponse<List<BrandResponse>>> list() {
-    return ApiResponses.ok(service.list());
+    return ApiResponses.ok(service.list(), "Liste des marques");
   }
 
   @GetMapping("/{id}")

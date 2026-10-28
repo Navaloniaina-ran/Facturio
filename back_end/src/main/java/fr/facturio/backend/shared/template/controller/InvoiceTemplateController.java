@@ -25,7 +25,7 @@ public class InvoiceTemplateController {
 
   @GetMapping("/api/invoice-templates")
   ResponseEntity<ApiResponse<List<InvoiceTemplateResponse>>> list() {
-    return ApiResponses.ok(service.list());
+    return ApiResponses.ok(service.list(), "Liste des modeles de facture");
   }
 
   @GetMapping("/api/invoice-templates/{id}")
@@ -64,16 +64,17 @@ public class InvoiceTemplateController {
   @GetMapping("/api/invoice-templates/{id}/versions")
   ResponseEntity<ApiResponse<List<InvoiceTemplateVersionResponse>>> versions(
       @PathVariable UUID id) {
-    return ApiResponses.ok(service.versions(id));
+    return ApiResponses.ok(service.versions(id), "Liste des versions du modele");
   }
 
   @PostMapping(
       value = "/api/invoice-templates/{id}/logo",
       consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-  Map<String, String> upload(@PathVariable UUID id, @RequestParam("file") MultipartFile file)
-      throws IOException {
+  ResponseEntity<ApiResponse<Map<String, String>>> upload(
+      @PathVariable UUID id, @RequestParam("file") MultipartFile file) throws IOException {
     service.get(id);
-    return Map.of("url", "/api/files/" + storage.storeLogo(file));
+    return ApiResponses.ok(
+        Map.of("url", "/api/files/" + storage.storeLogo(file)), "Logo enregistre");
   }
 
   @GetMapping("/api/files/{name}")

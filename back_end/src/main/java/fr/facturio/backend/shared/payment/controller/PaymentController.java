@@ -20,7 +20,7 @@ public class PaymentController {
 
   @GetMapping("/invoice/{invoiceId}")
   ResponseEntity<ApiResponse<List<PaymentResponse>>> list(@PathVariable UUID invoiceId) {
-    return ApiResponses.ok(service.list(invoiceId));
+    return ApiResponses.ok(service.list(invoiceId), "Liste des paiements");
   }
 
   @PostMapping

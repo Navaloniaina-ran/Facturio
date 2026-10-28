@@ -20,7 +20,13 @@ public class ApiMutationHeaderFilter extends OncePerRequestFilter {
     boolean mutation =
         request.getRequestURI().startsWith("/api/") && !SAFE_METHODS.contains(request.getMethod());
     if (mutation && !"XMLHttpRequest".equals(request.getHeader("X-Requested-With"))) {
-      response.sendError(HttpServletResponse.SC_FORBIDDEN, "En-tete anti-CSRF absent");
+      response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+      response.setContentType("application/json;charset=UTF-8");
+      response
+          .getWriter()
+          .write(
+              "{\"status\":403,\"message\":\"En-tete anti-CSRF absent\","
+                  + "\"data\":{\"code\":\"csrf_header_missing\"}}");
       return;
     }
     chain.doFilter(request, response);

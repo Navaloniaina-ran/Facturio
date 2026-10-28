@@ -20,7 +20,7 @@ public class CustomerController {
 
   @GetMapping
   ResponseEntity<ApiResponse<List<CustomerResponse>>> list() {
-    return ApiResponses.ok(service.list());
+    return ApiResponses.ok(service.list(), "Liste des clients");
   }
 
   @GetMapping("/{id}")

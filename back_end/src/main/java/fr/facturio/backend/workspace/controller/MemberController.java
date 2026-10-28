@@ -20,7 +20,7 @@ public class MemberController {
 
   @GetMapping
   ResponseEntity<ApiResponse<List<MemberResponse>>> list() {
-    return ApiResponses.ok(service.list());
+    return ApiResponses.ok(service.list(), "Liste des membres de l'espace");
   }
 
   @PostMapping

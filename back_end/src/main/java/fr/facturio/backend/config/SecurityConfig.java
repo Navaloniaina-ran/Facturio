@@ -96,7 +96,11 @@ public class SecurityConfig {
     return (request, response, exception) -> {
       response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
       response.setContentType("application/json;charset=UTF-8");
-      response.getWriter().write("{\"code\":\"unauthenticated\",\"message\":\"Session requise\"}");
+      response
+          .getWriter()
+          .write(
+              "{\"status\":401,\"message\":\"Session requise\","
+                  + "\"data\":{\"code\":\"unauthenticated\"}}");
     };
   }
 

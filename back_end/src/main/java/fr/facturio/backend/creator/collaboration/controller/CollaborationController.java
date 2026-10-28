@@ -21,7 +21,7 @@ public class CollaborationController {
 
   @GetMapping
   ResponseEntity<ApiResponse<List<CollaborationResponse>>> list() {
-    return ApiResponses.ok(service.list());
+    return ApiResponses.ok(service.list(), "Liste des collaborations");
   }
 
   @GetMapping("/{id}")
